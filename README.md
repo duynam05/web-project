@@ -54,27 +54,27 @@ Dự án được phát triển nhằm phục vụ mục đích học tập, đ�
 - Spring MVC  
 - Spring Data JPA / Hibernate 
 
-### 🔹 Database
+###  Database
 - MySQL
 
-### 🔹 Xác thực & bảo mật
+###  Xác thực & bảo mật
 - Spring Security  
 - JWT (JSON Web Token)  
 - BCrypt (mã hóa mật khẩu)
 
-### 🔹 DevOps & Triển khai
+###  DevOps & Triển khai
 - Docker   
 - Docker Compose 
 - Apache Tomcat
 
-### 🔹 Công cụ phát triển
+###  Công cụ phát triển
 - Git & GitHub (quản lý mã nguồn)  
 - Postman (test API)  
 - Visual Studio Code (code editor)
 - IntelliJ IDEA / Eclipse  
 
 
-### 🔹 Khác
+###  Khác
 - RESTful API  
 - MVC Architecture  
 - Responsive Design
