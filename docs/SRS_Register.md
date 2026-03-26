@@ -10,8 +10,8 @@
 
 ### 1. Mô tả tổng quan (Description)
 Chức năng cho phép người dùng mới tạo tài khoản "Khách hàng" để mua sắm. 
-Sau khi hoàn tất đăng ký thành công, hệ thống sẽ tự động đăng nhập và 
-điều hướng người dùng về trang chủ (Homepage) mà không cần xác thực email/OTP.
+Sau khi hoàn tất đăng ký thành công, hệ thống sẽ chuyển hướng về trang đăng nhập và 
+cho phép người dùng đăng nhập bằng tài khoản vừa tạo thành công để truy cập vào trang chủ (Homepage) mà không cần xác thực email/OTP.
 
 ---
 
@@ -32,7 +32,7 @@ Sau khi hoàn tất đăng ký thành công, hệ thống sẽ tự động đă
 #### 3.1 Input Validation
 - **Họ và tên:** 
   * Kiểu: String.
-  * Ràng buộc: Bắt buộc, tối đa 255 ký tự. Không chứa ký tự đặc biệt số (tùy chọn).
+  * Ràng buộc: Bắt buộc, tối đa 255 ký tự.
 - **Email:** 
  * Kiểu: String.
  * Ràng buộc: Bắt buộc, đúng định dạng `Regex: ^[^\s@]+@[^\s@]+\.[^\s@]+$`.
@@ -58,7 +58,7 @@ Sau khi hoàn tất đăng ký thành công, hệ thống sẽ tự động đă
 
 ### 4. Ràng buộc & Bảo mật (Constraints & Security)
 
-- **Auto-Login:** Sau khi lưu DB thành công, Server trả về Token (JWT) để Client lưu vào Cookie/LocalStorage.
+- **Điều hướng sau thành công:** Hệ thống không tự tạo session ngay. Sau khi lưu DB, Server phản hồi mã thành công (201 Created), Client thực hiện window.location.href = '/login'.
 - **Password Security:** Tuyệt đối không lưu mật khẩu thô.
 - **XSS/Injection:** Thực hiện sanitize đầu vào để chống SQL Injection và XSS.
 - **Rate Limiting:** Giới hạn tối đa 10 lần đăng ký thử trên 1 địa chỉ IP trong 1 giờ để chống bot.
@@ -78,8 +78,6 @@ Sau khi hoàn tất đăng ký thành công, hệ thống sẽ tự động đă
 ---
 
 ### 6. Giao diện (UI/UX Specification)
-
-- **Cấu trúc:** Một cột dọc (Single Column) trên mobile, hai cột trên desktop (tùy thiết kế).
-- **Trạng thái nút:** Nút "Đăng ký" sẽ ở trạng thái `disabled` nếu các trường bắt buộc chưa được điền.
+ **Thông báo: Sau khi đăng ký thành công, trang Đăng nhập nên hiển thị một Toast/Alert thông báo: "Tài khoản đã được tạo thành công! Vui lòng đăng nhập để bắt đầu."
 - **Tiện ích:** Có icon "Con mắt" để ẩn/hiện mật khẩu ở cả 2 ô Password.
-- **Thông báo:** Sử dụng Toast message xanh cho thành công và chữ đỏ dưới chân input cho lỗi validation.
+- **Thông báo:** Sử dụng Toast message chữ đỏ dưới chân input cho lỗi validation.
