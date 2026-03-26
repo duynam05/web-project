@@ -4,7 +4,7 @@
  
 **Mã chức năng:** AUTH-02  
 **Trạng thái:** In Progress  
-**Người soạn thảo:** Trịnh Duy Nam & Gemini AI
+**Người soạn thảo:** Phạm Thị Phượng
  
 ---
 
