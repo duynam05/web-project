@@ -19,25 +19,20 @@ public class CartController {
 
     private final CartService cartService;
 
-    // 🛒 GET
     @GetMapping
     public List<CartItem> getCart(Authentication authentication) {
         return cartService.getCart(authentication.getName());
     }
 
-    // ➕ ADD
     @PostMapping
     public void addToCart(@RequestBody CartRequest request, Principal principal) {
         cartService.addToCart(principal.getName(), request);
     }
-
-    // ❌ DELETE
     @DeleteMapping("/{id}")
     public void delete(@PathVariable String id) {
         cartService.deleteItem(id);
     }
 
-    // 🔄 UPDATE
     @PutMapping("/{id}")
     public void update(
             @PathVariable String id,
@@ -46,7 +41,6 @@ public class CartController {
         cartService.updateQuantity(id, body.get("quantity"));
     }
 
-    // 🧹 CLEAR
     @DeleteMapping("/clear")
     public void clear(Authentication authentication) {
         cartService.clearCart(authentication.getName());
