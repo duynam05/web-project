@@ -18,12 +18,22 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>identity-service</name>
 
+<!--	<properties>-->
+<!--		<java.version>21</java.version>-->
+<!--		<projectlombok-lombok.version>1.18.30</projectlombok-lombok.version>-->
+<!--		<mapstruct.version>1.5.5.Final</mapstruct.version>-->
+<!--		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>-->
+<!--		<spotless.version>2.43.0</spotless.version>-->
+<!--		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>-->
+<!--	</properties>-->
+
 	<properties>
 		<java.version>21</java.version>
-		<projectlombok-lombok.version>1.18.30</projectlombok-lombok.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<lombok.version>1.18.34</lombok.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
-		<spotless.version>2.43.0</spotless.version>
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
 	</properties>
 
@@ -34,42 +44,111 @@
 		</repository>
 	</repositories>
 
+<!--	<dependencies>-->
+
+<!--		&lt;!&ndash; Spring core &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-web</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Security &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; JPA &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-data-jpa</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Validation &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-validation</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Jackson time &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>com.fasterxml.jackson.datatype</groupId>-->
+<!--			<artifactId>jackson-datatype-jsr310</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Crypto &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.security</groupId>-->
+<!--			<artifactId>spring-security-crypto</artifactId>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; MySQL &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>com.mysql</groupId>-->
+<!--			<artifactId>mysql-connector-j</artifactId>-->
+<!--			<scope>runtime</scope>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Lombok &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.projectlombok</groupId>-->
+<!--			<artifactId>lombok</artifactId>-->
+<!--			<version>${projectlombok-lombok.version}</version>-->
+<!--			<scope>provided</scope>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; MapStruct &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.mapstruct</groupId>-->
+<!--			<artifactId>mapstruct</artifactId>-->
+<!--			<version>${mapstruct.version}</version>-->
+<!--		</dependency>-->
+
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.security</groupId>-->
+<!--			<artifactId>spring-security-test</artifactId>-->
+<!--			<scope>test</scope>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; H2 &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>com.h2database</groupId>-->
+<!--			<artifactId>h2</artifactId>-->
+<!--			<version>2.2.224</version>-->
+<!--			<scope>test</scope>-->
+<!--		</dependency>-->
+
+<!--		&lt;!&ndash; Unit Tests &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-test</artifactId>-->
+<!--			<scope>test</scope>-->
+<!--		</dependency>-->
+
+<!--	</dependencies>-->
+
+
 	<dependencies>
 
-		<!-- Spring core -->
+		<!-- Spring Boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-		<!-- Security -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-		</dependency>
-
-		<!-- JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
-		<!-- Validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- Jackson time -->
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
-		</dependency>
-
-		<!-- Crypto -->
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-crypto</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
 		</dependency>
 
 		<!-- MySQL -->
@@ -83,7 +162,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>${projectlombok-lombok.version}</version>
+			<version>${lombok.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -92,6 +171,12 @@
 			<groupId>org.mapstruct</groupId>
 			<artifactId>mapstruct</artifactId>
 			<version>${mapstruct.version}</version>
+		</dependency>
+
+		<!-- Jackson DateTime -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 
 		<!-- Test -->
@@ -107,54 +192,99 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- H2 -->
+		<!-- H2 Database for Testing -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<version>2.2.224</version>
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Unit Tests -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
+
+
+
+<!--	<build>-->
+<!--		<plugins>-->
+
+<!--			&lt;!&ndash; Spring Boot &ndash;&gt;-->
+<!--			<plugin>-->
+<!--				<groupId>org.springframework.boot</groupId>-->
+<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--				<configuration>-->
+<!--					<excludes>-->
+<!--						<exclude>-->
+<!--							<groupId>org.projectlombok</groupId>-->
+<!--							<artifactId>lombok</artifactId>-->
+<!--						</exclude>-->
+<!--					</excludes>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
+
+<!--			&lt;!&ndash; Compiler &ndash;&gt;-->
+<!--			<plugin>-->
+<!--				<groupId>org.apache.maven.plugins</groupId>-->
+<!--				<artifactId>maven-compiler-plugin</artifactId>-->
+<!--				<version>${maven-compiler-plugin.version}</version>-->
+<!--				<configuration>-->
+<!--					<source>${java.version}</source>-->
+<!--					<target>${java.version}</target>-->
+<!--					<annotationProcessorPaths>-->
+
+<!--						<path>-->
+<!--							<groupId>org.projectlombok</groupId>-->
+<!--							<artifactId>lombok</artifactId>-->
+<!--							<version>${projectlombok-lombok.version}</version>-->
+<!--						</path>-->
+
+<!--						<path>-->
+<!--							<groupId>org.projectlombok</groupId>-->
+<!--							<artifactId>lombok-mapstruct-binding</artifactId>-->
+<!--							<version>${lombok-mapstruct-binding.version}</version>-->
+<!--						</path>-->
+
+<!--						<path>-->
+<!--							<groupId>org.mapstruct</groupId>-->
+<!--							<artifactId>mapstruct-processor</artifactId>-->
+<!--							<version>${mapstruct.version}</version>-->
+<!--						</path>-->
+
+<!--					</annotationProcessorPaths>-->
+
+<!--					<compilerArgs>-->
+<!--						<arg>-Amapstruct.suppressGeneratorTimestamp=true</arg>-->
+<!--						<arg>-Amapstruct.defaultComponentModel=spring</arg>-->
+<!--						<arg>-Amapstruct.verbose=true</arg>-->
+<!--					</compilerArgs>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
+
+<!--		</plugins>-->
+
+<!--	</build>-->
 
 
 	<build>
 		<plugins>
 
-			<!-- Spring Boot -->
+			<!-- Spring Boot Plugin -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 
-			<!-- Compiler -->
+			<!-- Maven Compiler Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<release>${java.version}</release>
 					<annotationProcessorPaths>
 
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
-							<version>${projectlombok-lombok.version}</version>
+							<version>${lombok.version}</version>
 						</path>
 
 						<path>
@@ -170,12 +300,6 @@
 						</path>
 
 					</annotationProcessorPaths>
-
-					<compilerArgs>
-						<arg>-Amapstruct.suppressGeneratorTimestamp=true</arg>
-						<arg>-Amapstruct.defaultComponentModel=spring</arg>
-						<arg>-Amapstruct.verbose=true</arg>
-					</compilerArgs>
 				</configuration>
 			</plugin>
 

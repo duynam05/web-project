@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -49,9 +50,9 @@ public class CartService {
                     .user(user)
                     .book(book)
                     .quantity(request.getQuantity())
-                    .price(book.getPrice())     // ✅ FIX
-                    .title(book.getTitle())     // ✅ FIX
-                    .image(book.getImage())     // ✅ FIX
+                    .price(book.getPrice())
+                    .title(book.getTitle())
+                    .image(book.getImage())
                     .build();
 
             cartRepository.save(item);
@@ -59,12 +60,12 @@ public class CartService {
     }
 
     // ❌ DELETE
-    public void deleteItem(String id) {
+    public void deleteItem(UUID id) {
         cartRepository.deleteById(id);
     }
 
     // 🔄 UPDATE
-    public void updateQuantity(String id, int quantity) {
+    public void updateQuantity(UUID id, int quantity) {
         CartItem item = cartRepository.findById(id).orElseThrow();
         item.setQuantity(quantity);
         cartRepository.save(item);

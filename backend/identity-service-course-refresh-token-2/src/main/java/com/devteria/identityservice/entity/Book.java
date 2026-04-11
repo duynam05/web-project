@@ -6,6 +6,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
 @Entity
 @Getter
 @Setter
@@ -16,13 +19,14 @@ public class Book {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private UUID id;
 
     private String title;
     private String author;
     private String category;
-    private double price;
+    private BigDecimal price;
     private double rating;
+    private Integer stock;
 
     private String image; // URL ảnh
 }

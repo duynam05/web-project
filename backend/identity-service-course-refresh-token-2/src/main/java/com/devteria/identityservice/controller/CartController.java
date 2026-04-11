@@ -3,6 +3,7 @@ package com.devteria.identityservice.controller;
 import com.devteria.identityservice.dto.request.CartRequest;
 import com.devteria.identityservice.entity.CartItem;
 import com.devteria.identityservice.service.CartService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.Authentication;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/cart")
@@ -25,17 +27,17 @@ public class CartController {
     }
 
     @PostMapping
-    public void addToCart(@RequestBody CartRequest request, Principal principal) {
+    public void addToCart(@Valid @RequestBody CartRequest request, Principal principal) {
         cartService.addToCart(principal.getName(), request);
     }
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable String id) {
+    public void delete(@PathVariable UUID id) {
         cartService.deleteItem(id);
     }
 
     @PutMapping("/{id}")
     public void update(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @RequestBody Map<String, Integer> body
     ) {
         cartService.updateQuantity(id, body.get("quantity"));
