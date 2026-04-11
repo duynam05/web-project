@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,7 +17,7 @@ import lombok.experimental.FieldDefaults;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CartRequest {
     @NotNull(message = "Book ID is required")
-    private String bookId;
+    private UUID bookId;
 
     @Min(value = 1, message = "Quantity must be greater than 0")
     @ValidCartQuantity
