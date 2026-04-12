@@ -4,6 +4,8 @@ import com.devteria.identityservice.dto.request.CartRequest;
 import com.devteria.identityservice.entity.Book;
 import com.devteria.identityservice.entity.CartItem;
 import com.devteria.identityservice.entity.User;
+import com.devteria.identityservice.exception.AppException;
+import com.devteria.identityservice.exception.ErrorCode;
 import com.devteria.identityservice.repository.BookRepository;
 import com.devteria.identityservice.repository.CartRepository;
 import com.devteria.identityservice.repository.UserRepository;
@@ -32,17 +34,26 @@ public class CartService {
     public void addToCart(String email, CartRequest request) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new RuntimeException("Book not found"));
+
+        // Validate stock
+        if (request.getQuantity() > book.getStock()) {
+            throw new AppException(ErrorCode.OUT_OF_STOCK);
+        }
 
         Optional<CartItem> existing =
                 cartRepository.findByUserAndBook(user, book);
 
         if (existing.isPresent()) {
             CartItem item = existing.get();
-            item.setQuantity(item.getQuantity() + request.getQuantity());
+            int newQuantity = item.getQuantity() + request.getQuantity();
+            if (newQuantity > book.getStock()) {
+                throw new AppException(ErrorCode.OUT_OF_STOCK);
+            }
+            item.setQuantity(newQuantity);
             cartRepository.save(item);
 
         } else {
