@@ -19,6 +19,20 @@ public enum ErrorCode {
     DATABASE_ERROR(1009, "Database error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_REQUEST_BODY(1010, "Request body is missing or invalid", HttpStatus.BAD_REQUEST),
     OUT_OF_STOCK(1011, "Quantity exceeds available stock", HttpStatus.BAD_REQUEST),
+    BOOK_NOT_FOUND(1012, "Book not found", HttpStatus.NOT_FOUND),
+    CART_EMPTY(1013, "Cart is empty", HttpStatus.BAD_REQUEST),
+    CART_ITEM_NOT_FOUND(1014, "Cart item not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_FOUND(1015, "Order not found", HttpStatus.NOT_FOUND),
+    INVALID_PAYMENT_METHOD(1016, "Invalid payment method", HttpStatus.BAD_REQUEST),
+    PAYMENT_ALREADY_COMPLETED(1017, "Order payment has already been completed", HttpStatus.BAD_REQUEST),
+    PAYMENT_METHOD_NOT_SUPPORTED(1018, "Only ONLINE payment is supported for this endpoint", HttpStatus.BAD_REQUEST),
+    INVALID_QUANTITY(1019, "Quantity must be greater than 0", HttpStatus.BAD_REQUEST),
+    BOOK_ID_REQUIRED(1020, "Book ID is required", HttpStatus.BAD_REQUEST),
+    BOOTSTRAP_CONFIG_MISSING(1021, "Admin bootstrap configuration is missing", HttpStatus.INTERNAL_SERVER_ERROR),
+    ACCOUNT_DISABLED(1022, "Account is disabled", HttpStatus.FORBIDDEN),
+    INVALID_CURRENT_PASSWORD(1023, "Current password is invalid", HttpStatus.BAD_REQUEST),
+    INVALID_NEW_PASSWORD(1024, "New password must be at least 6 characters", HttpStatus.BAD_REQUEST),
+    INVALID_USER_STATUS(1025, "User status is invalid", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

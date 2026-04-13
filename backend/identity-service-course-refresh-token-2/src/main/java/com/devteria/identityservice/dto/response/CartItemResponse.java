@@ -1,6 +1,7 @@
 package com.devteria.identityservice.dto.response;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,12 +15,13 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderItemResponse {
-    String id;
-    String bookId;
+public class CartItemResponse {
+    UUID id;
+    UUID bookId;
     String title;
     String image;
-    Integer quantity;
-    BigDecimal price;
+    BigDecimal unitPrice;
+    int quantity;
     BigDecimal lineTotal;
+    Integer availableStock;
 }

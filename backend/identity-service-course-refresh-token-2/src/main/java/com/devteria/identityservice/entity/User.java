@@ -3,6 +3,7 @@ package com.devteria.identityservice.entity;
 import java.time.LocalDate;
 import java.util.Set;
 
+import com.devteria.identityservice.constant.UserStatus;
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -20,11 +21,20 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
 
+    @Column(nullable = false, unique = true)
     String email;
+
+    @Column(nullable = false)
     String password;
+
     String fullName;
+    LocalDate dob;
     String phone;
     String address;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    UserStatus status = UserStatus.ACTIVE;
 
     @ManyToMany
     Set<Role> roles;

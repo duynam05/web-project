@@ -19,8 +19,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {
-        "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
+    private static final String[] PUBLIC_POST_ENDPOINTS = {
+            "/auth/register", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
     };
 
     @Autowired
@@ -28,9 +28,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS)
                 .permitAll().requestMatchers(HttpMethod.GET, "/books").permitAll()
-                .requestMatchers("/cart/**").permitAll()
                 .anyRequest()
                 .authenticated());
 
@@ -55,7 +54,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    PasswordEncoder passwordEncoder() {
+    static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
 }

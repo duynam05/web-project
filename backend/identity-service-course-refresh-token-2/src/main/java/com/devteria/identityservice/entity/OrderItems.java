@@ -20,12 +20,12 @@ public class OrderItems {
     private UUID id;
 
     // Liên kết tới đơn hàng
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Orders order;
 
     // Liên kết tới sách
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
@@ -35,6 +35,7 @@ public class OrderItems {
 
     // Thông tin snapshot để tránh thay đổi khi sách bị chỉnh sửa
     private String title;
+
     private String image;
 
     // Số lượng

@@ -3,6 +3,7 @@ package com.devteria.identityservice.controller;
 import java.util.List;
 
 import com.devteria.identityservice.dto.request.UpdateMyInfoRequest;
+import com.devteria.identityservice.dto.request.UserStatusUpdateRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
@@ -54,10 +55,11 @@ public class UserController {
                 .build();
     }
 
-    // ✅ UPDATE current user
     @PutMapping("/me")
-    public UserResponse updateMyInfo(@RequestBody UpdateMyInfoRequest request) {
-        return userService.updateMyInfo(request);
+    ApiResponse<UserResponse> updateMyInfo(@RequestBody UpdateMyInfoRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.updateMyInfo(request))
+                .build();
     }
 
     @DeleteMapping("/{userId}")
@@ -73,5 +75,11 @@ public class UserController {
                 .build();
     }
 
-
+    @PatchMapping("/{userId}/status")
+    ApiResponse<UserResponse> updateUserStatus(
+            @PathVariable String userId, @RequestBody @Valid UserStatusUpdateRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.updateUserStatus(userId, request))
+                .build();
+    }
 }

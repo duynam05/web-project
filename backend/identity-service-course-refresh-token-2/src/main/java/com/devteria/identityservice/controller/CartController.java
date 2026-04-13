@@ -1,18 +1,25 @@
 package com.devteria.identityservice.controller;
 
-import com.devteria.identityservice.dto.request.CartRequest;
-import com.devteria.identityservice.entity.CartItem;
-import com.devteria.identityservice.service.CartService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import com.devteria.identityservice.dto.request.ApiResponse;
+import com.devteria.identityservice.dto.request.CartQuantityUpdateRequest;
+import com.devteria.identityservice.dto.request.CartRequest;
+import com.devteria.identityservice.dto.response.CartResponse;
+import com.devteria.identityservice.service.CartService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/cart")
@@ -22,29 +29,41 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    public List<CartItem> getCart(Authentication authentication) {
-        return cartService.getCart(authentication.getName());
+    public ApiResponse<CartResponse> getCart(Authentication authentication) {
+        return ApiResponse.<CartResponse>builder()
+                .result(cartService.getCart(authentication.getName()))
+                .build();
     }
 
     @PostMapping
-    public void addToCart(@Valid @RequestBody CartRequest request, Principal principal) {
-        cartService.addToCart(principal.getName(), request);
+    public ApiResponse<CartResponse> addToCart(
+            @Valid @RequestBody CartRequest request, Authentication authentication) {
+        return ApiResponse.<CartResponse>builder()
+                .result(cartService.addToCart(authentication.getName(), request))
+                .build();
     }
+
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable UUID id) {
-        cartService.deleteItem(id);
+    public ApiResponse<CartResponse> delete(@PathVariable UUID id, Authentication authentication) {
+        return ApiResponse.<CartResponse>builder()
+                .result(cartService.deleteItem(authentication.getName(), id))
+                .build();
     }
 
     @PutMapping("/{id}")
-    public void update(
+    public ApiResponse<CartResponse> update(
             @PathVariable UUID id,
-            @RequestBody Map<String, Integer> body
-    ) {
-        cartService.updateQuantity(id, body.get("quantity"));
+            @Valid @RequestBody CartQuantityUpdateRequest body,
+            Authentication authentication) {
+        return ApiResponse.<CartResponse>builder()
+                .result(cartService.updateQuantity(authentication.getName(), id, body.getQuantity()))
+                .build();
     }
 
     @DeleteMapping("/clear")
-    public void clear(Authentication authentication) {
-        cartService.clearCart(authentication.getName());
+    public ApiResponse<CartResponse> clear(Authentication authentication) {
+        return ApiResponse.<CartResponse>builder()
+                .result(cartService.clearCart(authentication.getName()))
+                .build();
     }
 }

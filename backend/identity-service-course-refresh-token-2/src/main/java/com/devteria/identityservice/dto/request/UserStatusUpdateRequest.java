@@ -1,7 +1,6 @@
-package com.devteria.identityservice.dto.response;
+package com.devteria.identityservice.dto.request;
 
-import java.math.BigDecimal;
-
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,16 +9,11 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderItemResponse {
-    String id;
-    String bookId;
-    String title;
-    String image;
-    Integer quantity;
-    BigDecimal price;
-    BigDecimal lineTotal;
+public class UserStatusUpdateRequest {
+    @NotBlank(message = "INVALID_USER_STATUS")
+    String status;
 }

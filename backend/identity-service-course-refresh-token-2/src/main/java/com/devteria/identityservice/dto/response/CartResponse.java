@@ -1,7 +1,6 @@
 package com.devteria.identityservice.dto.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import lombok.AccessLevel;
@@ -16,18 +15,9 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderResponse {
-    String orderId;
+public class CartResponse {
+    List<CartItemResponse> items;
+    int totalItems;
+    int totalQuantity;
     BigDecimal totalPrice;
-    String status;
-    String phone;
-    String address;
-    Double latitude;
-    Double longitude;
-    String paymentMethod;
-    String paymentStatus;
-    String paymentReference;
-    LocalDateTime createdAt;
-    LocalDateTime paidAt;
-    List<OrderItemResponse> items;
 }

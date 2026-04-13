@@ -60,7 +60,7 @@ public class UserControllerTest {
     }
 
     @Test
-    //
+        //
     void createUser_validRequest_success() throws Exception {
         // GIVEN
         ObjectMapper objectMapper = new ObjectMapper();
@@ -80,7 +80,7 @@ public class UserControllerTest {
     }
 
     @Test
-    //
+        //
     void createUser_usernameInvalid_fail() throws Exception {
         // GIVEN
         request.setEmail("a@g");

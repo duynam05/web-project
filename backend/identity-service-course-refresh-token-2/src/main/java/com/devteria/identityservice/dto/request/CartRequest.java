@@ -15,9 +15,9 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CartRequest {
-    @NotNull(message = "Book ID is required")
+    @NotNull(message = "BOOK_ID_REQUIRED")
     private UUID bookId;
 
-    @Min(value = 1, message = "Quantity must be greater than 0")
+    @Min(value = 1, message = "INVALID_QUANTITY")
     private int quantity;
 }

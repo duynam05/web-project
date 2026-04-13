@@ -1,6 +1,16 @@
 package com.devteria.identityservice.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.devteria.identityservice.dto.request.CartRequest;
+import com.devteria.identityservice.dto.response.CartItemResponse;
+import com.devteria.identityservice.dto.response.CartResponse;
 import com.devteria.identityservice.entity.Book;
 import com.devteria.identityservice.entity.CartItem;
 import com.devteria.identityservice.entity.User;
@@ -9,13 +19,8 @@ import com.devteria.identityservice.exception.ErrorCode;
 import com.devteria.identityservice.repository.BookRepository;
 import com.devteria.identityservice.repository.CartRepository;
 import com.devteria.identityservice.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -25,37 +30,25 @@ public class CartService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
 
-    // 🛒 GET
-    public List<CartItem> getCart(String email) {
-        return cartRepository.findByUserEmail(email);
+    @Transactional(readOnly = true)
+    public CartResponse getCart(String email) {
+        return buildCartResponse(email);
     }
 
-    // ➕ ADD
-    public void addToCart(String email, CartRequest request) {
+    @Transactional
+    public CartResponse addToCart(String email, CartRequest request) {
+        User user = findUserByEmail(email);
+        Book book = findBookById(request.getBookId());
+        validateQuantity(request.getQuantity(), book.getStock());
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        Book book = bookRepository.findById(request.getBookId())
-                .orElseThrow(() -> new RuntimeException("Book not found"));
-
-        // Validate stock
-        if (request.getQuantity() > book.getStock()) {
-            throw new AppException(ErrorCode.OUT_OF_STOCK);
-        }
-
-        Optional<CartItem> existing =
-                cartRepository.findByUserAndBook(user, book);
-
+        Optional<CartItem> existing = cartRepository.findByUserAndBook(user, book);
         if (existing.isPresent()) {
             CartItem item = existing.get();
             int newQuantity = item.getQuantity() + request.getQuantity();
-            if (newQuantity > book.getStock()) {
-                throw new AppException(ErrorCode.OUT_OF_STOCK);
-            }
+            validateQuantity(newQuantity, book.getStock());
+
             item.setQuantity(newQuantity);
             cartRepository.save(item);
-
         } else {
             CartItem item = CartItem.builder()
                     .user(user)
@@ -68,23 +61,89 @@ public class CartService {
 
             cartRepository.save(item);
         }
+
+        return buildCartResponse(email);
     }
 
-    // ❌ DELETE
-    public void deleteItem(UUID id) {
-        cartRepository.deleteById(id);
+    @Transactional
+    public CartResponse deleteItem(String email, UUID id) {
+        long deleted = cartRepository.deleteByIdAndUserEmail(id, email);
+        if (deleted == 0) {
+            throw new AppException(ErrorCode.CART_ITEM_NOT_FOUND);
+        }
+
+        return buildCartResponse(email);
     }
 
-    // 🔄 UPDATE
-    public void updateQuantity(UUID id, int quantity) {
-        CartItem item = cartRepository.findById(id).orElseThrow();
+    @Transactional
+    public CartResponse updateQuantity(String email, UUID id, int quantity) {
+        CartItem item = cartRepository.findByIdAndUserEmail(id, email)
+                .orElseThrow(() -> new AppException(ErrorCode.CART_ITEM_NOT_FOUND));
+
+        validateQuantity(quantity, item.getBook().getStock());
         item.setQuantity(quantity);
         cartRepository.save(item);
+
+        return buildCartResponse(email);
     }
 
-    // 🧹 CLEAR
     @Transactional
-    public void clearCart(String email) {
+    public CartResponse clearCart(String email) {
         cartRepository.deleteByUserEmail(email);
+        return buildCartResponse(email);
+    }
+
+    private User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+    }
+
+    private Book findBookById(UUID bookId) {
+        return bookRepository.findById(bookId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+    }
+
+    private void validateQuantity(int quantity, Integer stock) {
+        if (quantity < 1) {
+            throw new IllegalArgumentException("Quantity must be greater than 0");
+        }
+
+        if (stock == null || quantity > stock) {
+            throw new AppException(ErrorCode.OUT_OF_STOCK);
+        }
+    }
+
+    private CartResponse buildCartResponse(String email) {
+        List<CartItemResponse> items = cartRepository.findAllByUserEmailOrderByIdAsc(email).stream()
+                .map(this::toCartItemResponse)
+                .toList();
+
+        BigDecimal totalPrice = items.stream()
+                .map(CartItemResponse::getLineTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        int totalQuantity = items.stream().mapToInt(CartItemResponse::getQuantity).sum();
+
+        return CartResponse.builder()
+                .items(items)
+                .totalItems(items.size())
+                .totalQuantity(totalQuantity)
+                .totalPrice(totalPrice)
+                .build();
+    }
+
+    private CartItemResponse toCartItemResponse(CartItem item) {
+        BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+
+        return CartItemResponse.builder()
+                .id(item.getId())
+                .bookId(item.getBook().getId())
+                .title(item.getTitle())
+                .image(item.getImage())
+                .unitPrice(item.getPrice())
+                .quantity(item.getQuantity())
+                .lineTotal(lineTotal)
+                .availableStock(item.getBook().getStock())
+                .build();
     }
 }

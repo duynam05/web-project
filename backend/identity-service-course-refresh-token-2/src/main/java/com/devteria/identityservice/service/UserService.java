@@ -2,9 +2,13 @@ package com.devteria.identityservice.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 
+import com.devteria.identityservice.constant.UserStatus;
+import com.devteria.identityservice.dto.request.ChangePasswordRequest;
+import com.devteria.identityservice.dto.request.RegisterRequest;
 import com.devteria.identityservice.dto.request.UpdateMyInfoRequest;
-import org.springframework.security.access.prepost.PostAuthorize;
+import com.devteria.identityservice.dto.request.UserStatusUpdateRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,14 +41,24 @@ public class UserService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) throw new AppException(ErrorCode.USER_EXISTED);
+        return createUserInternal(userMapper.toUser(request), request.getPassword());
+    }
 
-        User user = userMapper.toUser(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+    public UserResponse registerUser(RegisterRequest request) {
+        return createUserInternal(userMapper.toUser(request), request.getPassword());
+    }
+
+    private UserResponse createUserInternal(User user, String rawPassword) {
+        if (userRepository.existsByEmail(user.getEmail())) throw new AppException(ErrorCode.USER_EXISTED);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setStatus(UserStatus.ACTIVE);
 
         HashSet<Role> roles = new HashSet<>();
-        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+        roles.add(roleRepository
+                .findById(PredefinedRole.USER_ROLE)
+                .orElseThrow(() -> new IllegalStateException("USER role must exist before creating users")));
 
         user.setRoles(roles);
 
@@ -61,36 +75,50 @@ public class UserService {
     }
 
     public UserResponse updateMyInfo(UpdateMyInfoRequest request) {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        User user = getCurrentUser();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        user.setFullName(request.getFullName());
-
-        // thêm nếu có field
-        user.setPhone(request.getPhone());
-        user.setAddress(request.getAddress());
-
-        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
         }
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    @PostAuthorize("returnObject.email == authentication.name")
+    public void changePassword(ChangePasswordRequest request) {
+        User user = getCurrentUser();
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.INVALID_CURRENT_PASSWORD);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         userMapper.updateUser(user, request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        var roles = roleRepository.findAllById(request.getRoles());
-        user.setRoles(new HashSet<>(roles));
+        if (request.getRoles() != null) {
+            var roles = roleRepository.findAllById(request.getRoles());
+            user.setRoles(new HashSet<>(roles));
+        }
 
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse updateUserStatus(String userId, UserStatusUpdateRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        user.setStatus(parseUserStatus(request.getStatus()));
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
@@ -109,5 +137,22 @@ public class UserService {
     public UserResponse getUser(String id) {
         return userMapper.toUserResponse(
                 userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
+    }
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+    }
+
+    private UserStatus parseUserStatus(String rawStatus) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_USER_STATUS);
+        }
+
+        try {
+            return UserStatus.valueOf(rawStatus.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new AppException(ErrorCode.INVALID_USER_STATUS);
+        }
     }
 }

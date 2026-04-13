@@ -48,6 +48,18 @@ public class Orders {
     @Column(nullable = false)
     private String status;
 
+    @Column(length = 32)
+    private String paymentMethod;
+
+    @Column(length = 32)
+    private String paymentStatus;
+
+    @Column(length = 64)
+    private String paymentReference;
+
+    @Column
+    private LocalDateTime paidAt;
+
     // Thời gian tạo đơn
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
