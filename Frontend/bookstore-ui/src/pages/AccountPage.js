@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User, LogOut, Edit2, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, resolveAvatarUrl, DEFAULT_AVATAR_URL } from '../config/api';
 
 const AccountPage = () => {
   const { user, logout } = useAuth();
@@ -32,8 +32,11 @@ const AccountPage = () => {
         });
 
         const data = await res.json();
-        const userData = data.result || data;
+        if (!res.ok) {
+          throw new Error(data.message || 'Không tải được hồ sơ');
+        }
 
+        const userData = data.result || data;
         setProfile(userData);
         setForm({
           fullName: userData.fullName || '',
@@ -42,6 +45,7 @@ const AccountPage = () => {
         });
       } catch (err) {
         console.error(err);
+        alert(err.message || 'Không tải được hồ sơ');
       }
     };
 
@@ -64,8 +68,11 @@ const AccountPage = () => {
       });
 
       const data = await res.json();
-      const updatedProfile = data.result || { ...profile, ...form };
+      if (!res.ok) {
+        throw new Error(data.message || 'Cập nhật thất bại');
+      }
 
+      const updatedProfile = data.result || { ...profile, ...form };
       setProfile(updatedProfile);
       setForm({
         fullName: updatedProfile.fullName || '',
@@ -76,7 +83,7 @@ const AccountPage = () => {
       alert("Cập nhật thành công!");
     } catch (err) {
       console.error(err);
-      alert("Lỗi!");
+      alert(err.message || "Lỗi!");
     }
   };
 
@@ -102,9 +109,13 @@ const AccountPage = () => {
         <div className="bg-white p-6 rounded-xl shadow">
           <div className="text-center mb-6">
             <img
-              src="https://via.placeholder.com/150"
-              className="w-24 h-24 rounded-full mx-auto mb-3"
-              alt=""
+              src={resolveAvatarUrl(profile.avatar || user.avatar)}
+              className="w-24 h-24 rounded-full mx-auto mb-3 object-cover border border-gray-200"
+              alt={profile.fullName || 'User avatar'}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = DEFAULT_AVATAR_URL;
+              }}
             />
             <h2 className="font-bold text-lg">{profile.fullName}</h2>
             <p className="text-gray-500">{profile.email}</p>

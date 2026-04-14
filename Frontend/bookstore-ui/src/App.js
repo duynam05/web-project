@@ -80,7 +80,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { ShoppingCart, BookOpen, User, LogIn } from 'lucide-react';
+import { ShoppingCart, BookOpen, LogIn } from 'lucide-react';
 
 // Pages
 import Home from './pages/Home';
@@ -95,6 +95,7 @@ import RegisterPage from './pages/RegisterPage';
 import { CartProvider, useCart } from './contexts/CartContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { resolveAvatarUrl, DEFAULT_AVATAR_URL } from './config/api';
 
 // --- NAVBAR COMPONENT ---
 const Navbar = () => {
@@ -123,11 +124,15 @@ const Navbar = () => {
 
           {user ? (
             <Link to="/account" className="flex items-center gap-2 hover:text-blue-600 group">
-               {user.avatar ? (
-                 <img src={user.avatar} alt="User" className="w-8 h-8 rounded-full border border-gray-200" />
-               ) : (
-                 <User size={24} />
-               )}
+               <img
+                 src={resolveAvatarUrl(user.avatar)}
+                 alt="User"
+                 className="w-8 h-8 rounded-full border border-gray-200 object-cover"
+                 onError={(e) => {
+                   e.currentTarget.onerror = null;
+                   e.currentTarget.src = DEFAULT_AVATAR_URL;
+                 }}
+               />
                <span className="hidden md:block max-w-[100px] truncate">{user.name}</span>
             </Link>
           ) : (

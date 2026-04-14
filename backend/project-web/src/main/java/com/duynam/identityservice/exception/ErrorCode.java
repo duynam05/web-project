@@ -33,6 +33,8 @@ public enum ErrorCode {
     INVALID_CURRENT_PASSWORD(1023, "Current password is invalid", HttpStatus.BAD_REQUEST),
     INVALID_NEW_PASSWORD(1024, "New password must be at least 6 characters", HttpStatus.BAD_REQUEST),
     INVALID_USER_STATUS(1025, "User status is invalid", HttpStatus.BAD_REQUEST),
+    CLOUDINARY_NOT_CONFIGURED(1026, "Cloudinary is not configured", HttpStatus.INTERNAL_SERVER_ERROR),
+    CLOUDINARY_UPLOAD_FAILED(1027, "Cloudinary upload failed", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

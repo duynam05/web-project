@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import StarRating from './StarRating';
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart } from 'lucide-react';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, resolveImageUrl } from '../config/api';
 
 const BookCard = ({ book }) => {
   const { user } = useAuth();
@@ -47,9 +47,12 @@ const BookCard = ({ book }) => {
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col h-full">
       <Link to={`/book/${book.id}`} className="relative h-64 overflow-hidden group">
         <img
-          src={book.image}
+          src={resolveImageUrl(book.image)}
           alt={book.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            e.currentTarget.src = '/placeholder-book.svg';
+          }}
         />
       </Link>
 

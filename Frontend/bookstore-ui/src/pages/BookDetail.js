@@ -4,7 +4,7 @@ import { useHistory } from '../contexts/HistoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import StarRating from '../components/StarRating';
 import { ShoppingCart } from 'lucide-react';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, resolveImageUrl } from '../config/api';
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -99,7 +99,14 @@ const BookDetail = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
         <div className="flex justify-center bg-gray-100 rounded-lg p-8">
-          <img src={book.image} alt={book.title} className="max-w-xs shadow-2xl rounded" />
+          <img
+            src={resolveImageUrl(book.image)}
+            alt={book.title}
+            className="max-w-xs shadow-2xl rounded"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder-book.svg';
+            }}
+          />
         </div>
 
         <div>
