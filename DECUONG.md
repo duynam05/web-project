@@ -4,7 +4,7 @@
 Xây dựng Website Bán sách
 
 ## 2. Mô tả đề tài
-Xây dựng một hệ thống website bán sách cho phép người dùng xem sản phẩm, đặt hàng và thanh toán trực tuyến. 
+Xây dựng một hệ thống website bán sách cho phép người dùng xem sản phẩm, đặt hàng và thanh toán trực tuyến.
 Hệ thống hỗ trợ quản trị viên quản lý sản phẩm, đơn hàng và người dùng.
 
 ## 3. Đối tượng sử dụng
@@ -37,6 +37,5 @@ Hệ thống hỗ trợ quản trị viên quản lý sản phẩm, đơn hàng 
 
 ## 5. Công nghệ dự kiến sử dụng
 - Frontend: HTML, CSS, JavaScript (ReactJS nếu có)
-- Backend:  Java
+- Backend: Java
 - Database: MySQL
-

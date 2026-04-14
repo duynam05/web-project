@@ -16,7 +16,7 @@ Chức năng đăng nhập cho phép người dùng truy cập vào hệ thống
 ### 2. Luồng nghiệp vụ (User Workflow)
 
 | Bước | Hành động người dùng | Phản hồi hệ thống |
-|------|---------------------|------------------|
+|------|----------------------|-------------------|
 | 1 | Truy cập trang `/login` | Hiển thị form đăng nhập |
 | 2 | Nhập email và mật khẩu | Kiểm tra dữ liệu đầu vào |
 | 3 | Nhấn nút "Đăng nhập" | Gửi request lên server |
@@ -50,9 +50,9 @@ Chức năng đăng nhập cho phép người dùng truy cập vào hệ thống
 
 ### 5. Xử lý lỗi (Edge Cases)
 
-- Sai email → "Email không tồn tại"
-- Sai mật khẩu → "Mật khẩu không đúng"
-- Tài khoản bị khóa → "Tài khoản bị khóa"
+- Sai email -> "Email không tồn tại"
+- Sai mật khẩu -> "Mật khẩu không đúng"
+- Tài khoản bị khóa -> "Tài khoản bị khóa"
 
 ---
 

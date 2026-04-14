@@ -1,4 +1,4 @@
-﻿# Đề tài: XÂY DỰNG WEBSITE BÁN SÁCH
+# Đề tài: XÂY DỰNG WEBSITE BÁN SÁCH
 
 ## Giới thiệu
 
@@ -11,7 +11,7 @@
 | Thành viên | Mã sinh viên |
 | --- | --- |
 | Trịnh Duy Nam | 23810310255 |
-| Phạm Thị Phượng | 23810310265 |
+| Phạm Thị Phương | 23810310265 |
 
 ## Công nghệ sử dụng
 
@@ -39,17 +39,17 @@
 
 ```text
 web-project/
-├─ backend/
-│  └─ identity-service-course-refresh-token-2/
-│     ├─ src/main/java
-│     ├─ src/main/resources/application.yaml
-│     ├─ src/test/java
-│     ├─ pom.xml
-│     ├─ mvnw
-│     └─ mvnw.cmd
-├─ docs/
-├─ reports/
-└─ README.md
+├── backend/
+│   └── project-web/
+│       ├── src/main/java
+│       ├── src/main/resources/application.yaml
+│       ├── src/test/java
+│       ├── pom.xml
+│       ├── mvnw
+│       └── mvnw.cmd
+├── docs/
+├── reports/
+└── README.md
 ```
 
 ## Hướng dẫn sử dụng
@@ -63,7 +63,7 @@ web-project/
 
 ### 2. Cấu hình database
 
-Mở file `backend/identity-service-course-refresh-token-2/src/main/resources/application.yaml` và kiểm tra các thông số:
+Mở file `backend/project-web/src/main/resources/application.yaml` và kiểm tra các thông số:
 
 ```yaml
 server:
@@ -89,7 +89,7 @@ CREATE DATABASE bookstore1;
 Từ thư mục gốc project:
 
 ```powershell
-cd backend/identity-service-course-refresh-token-2
+cd backend/project-web
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -102,7 +102,7 @@ http://localhost:8181/identity
 ### 4. Build và chạy test
 
 ```powershell
-cd backend/identity-service-course-refresh-token-2
+cd backend/project-web
 .\mvnw.cmd clean test
 .\mvnw.cmd clean package
 ```
@@ -134,11 +134,11 @@ Bạn có thể dùng Postman để import collection và test lần lượt cá
 | 2026-03-20 | Trịnh Duy Nam | Khởi tạo project, thiết kế giao diện cơ bản | Chưa có |
 | 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng nhập | [SRS Login](./docs/SRS_LOGIN.md) |
 | 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng ký | [SRS Register](./docs/SRS_REGISTER.md) |
-| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng giỏ hàng | Đang cập nhật |
-| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sản phẩm | Đang cập nhật |
+| 2026-03-29 | Phạm Thị Phương | Xây dựng chức năng giỏ hàng | Đang cập nhật |
+| 2026-03-29 | Phạm Thị Phương | Xây dựng chức năng quản lý sản phẩm | Đang cập nhật |
 | 2026-04-02 | Trịnh Duy Nam | Chức năng làm mới phiên đăng nhập | Đang cập nhật |
 | 2026-04-03 | Trịnh Duy Nam | Chức năng đăng xuất | Đang cập nhật |
-| 2026-04-04 | Phạm Thị Phượng | Chức năng hồ sơ cá nhân | Đang cập nhật |
+| 2026-04-04 | Phạm Thị Phương | Chức năng hồ sơ cá nhân | Đang cập nhật |
 
 ## Ghi chú
 
