@@ -18,11 +18,16 @@ const BookDetail = () => {
   const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
-    fetch(buildApiUrl('/books'))
-      .then((res) => res.json())
+    fetch(buildApiUrl(`/books/${id}`))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to load book');
+        }
+
+        return res.json();
+      })
       .then((data) => {
-        const list = Array.isArray(data?.result) ? data.result : data;
-        const foundBook = Array.isArray(list) ? list.find((item) => item.id === id) : null;
+        const foundBook = data?.result || data;
 
         setBook(foundBook || null);
         setReviews([]);
@@ -97,12 +102,12 @@ const BookDetail = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <div className="flex justify-center bg-gray-100 rounded-lg p-8">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 mb-12">
+        <div className="flex justify-center rounded-lg bg-gray-100 p-8">
           <img
             src={resolveImageUrl(book.image)}
             alt={book.title}
-            className="max-w-xs shadow-2xl rounded"
+            className="max-w-xs rounded shadow-2xl"
             onError={(e) => {
               e.currentTarget.src = '/placeholder-book.svg';
             }}
@@ -110,23 +115,23 @@ const BookDetail = () => {
         </div>
 
         <div>
-          <h1 className="text-3xl font-bold mb-2">{book.title}</h1>
-          <p className="text-xl text-gray-600 mb-4">Tác giả: {book.author}</p>
-          <div className="flex items-center gap-2 mb-4">
+          <h1 className="mb-2 text-3xl font-bold">{book.title}</h1>
+          <p className="mb-4 text-xl text-gray-600">Tác giả: {book.author}</p>
+          <div className="mb-4 flex items-center gap-2">
             <span className="text-2xl font-bold text-red-600">
               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
             </span>
-            <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">{book.category}</span>
+            <span className="rounded bg-blue-100 px-2 py-1 text-sm text-blue-800">{book.category}</span>
           </div>
 
-          <div className="flex items-center gap-2 mb-6">
+          <div className="mb-6 flex items-center gap-2">
             <StarRating rating={book.rating} />
             <span className="text-gray-500">({reviews.length} đánh giá)</span>
           </div>
 
           <button
             onClick={handleAddToCart}
-            className="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-bold"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 font-bold text-white transition hover:bg-blue-700"
           >
             <ShoppingCart /> Thêm vào giỏ hàng
           </button>
@@ -134,24 +139,24 @@ const BookDetail = () => {
       </div>
 
       <div className="border-t pt-8">
-        <h2 className="text-2xl font-bold mb-6">Đánh giá & Nhận xét</h2>
+        <h2 className="mb-6 text-2xl font-bold">Đánh giá & Nhận xét</h2>
 
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h3 className="font-semibold mb-4">Viết nhận xét của bạn</h3>
+        <div className="mb-8 rounded-lg bg-gray-50 p-6">
+          <h3 className="mb-4 font-semibold">Viết nhận xét của bạn</h3>
           <form onSubmit={handleSubmitReview}>
             <div className="mb-4">
-              <label className="block mb-2 text-sm">Đánh giá của bạn:</label>
+              <label className="mb-2 block text-sm">Đánh giá của bạn:</label>
               <StarRating rating={userRating} onRate={setUserRating} editable={true} />
             </div>
             <textarea
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
+              className="mb-4 w-full rounded-lg border p-3 focus:ring-2 focus:ring-blue-500"
               rows="3"
               placeholder="Chia sẻ cảm nghĩ của bạn về sách này..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               required
             />
-            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded hover:bg-black transition">
+            <button type="submit" className="rounded bg-gray-800 px-6 py-2 text-white transition hover:bg-black">
               Gửi nhận xét
             </button>
           </form>
@@ -160,7 +165,7 @@ const BookDetail = () => {
         <div className="space-y-6">
           {reviews.map((rev, index) => (
             <div key={index} className="border-b pb-4 last:border-0">
-              <div className="flex justify-between items-center mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <span className="font-bold">{rev.user}</span>
                 <StarRating rating={rev.rating} />
               </div>
