@@ -109,7 +109,7 @@ const Navbar = () => {
                   e.currentTarget.src = DEFAULT_AVATAR_URL;
                 }}
               />
-              <span className="hidden max-w-[100px] truncate xl:block">{user.name}</span>
+              <span className="hidden max-w-[100px] truncate xl:block">{user.name || user.fullName || user.email}</span>
             </Link>
           ) : (
             <Link to="/login" className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700">

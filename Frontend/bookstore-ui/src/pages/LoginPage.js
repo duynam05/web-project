@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { LogIn } from 'lucide-react';
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from 'jwt-decode';
+
+import { useAuth } from '../contexts/AuthContext';
 import { buildApiUrl } from '../config/api';
+
+const ADMIN_APP_URL = process.env.REACT_APP_ADMIN_URL || 'http://localhost:5173';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -19,9 +22,9 @@ const LoginPage = () => {
 
     try {
       const res = await fetch(buildApiUrl('/auth/token'), {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
@@ -30,26 +33,48 @@ const LoginPage = () => {
       const token = data.result?.token;
 
       if (!token) {
-        setError("Sai tài khoản hoặc mật khẩu");
+        setError('Sai tài khoản hoặc mật khẩu');
         return;
       }
 
-      localStorage.setItem("token", token);
+      localStorage.setItem('token', token);
 
       const decoded = jwtDecode(token);
-      const role = decoded.scope?.includes("ADMIN") ? "ADMIN" : "USER";
+      const role = decoded.scope?.includes('ROLE_ADMIN') ? 'ADMIN' : 'USER';
+
+      const profileRes = await fetch(buildApiUrl('/users/my-info'), {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const profileData = await profileRes.json();
+
+      if (!profileRes.ok) {
+        throw new Error(profileData.message || 'Không tải được thông tin tài khoản');
+      }
+
+      const profile = profileData.result || {};
       const user = {
         email: decoded.sub,
-        fullName: decoded.sub,
+        fullName: profile.fullName || decoded.sub,
+        name: profile.fullName || decoded.sub,
         role,
+        roles: profile.roles || [],
+        status: profile.status,
       };
 
-      localStorage.setItem("currentUser", JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(user));
       login(user);
-      navigate("/");
+
+      if (role === 'ADMIN') {
+        window.location.href = `${ADMIN_APP_URL}?token=${encodeURIComponent(token)}`;
+        return;
+      }
+
+      navigate('/');
     } catch (err) {
       console.error(err);
-      setError("Lỗi server");
+      setError(err.message || 'Lỗi server');
     }
   };
 

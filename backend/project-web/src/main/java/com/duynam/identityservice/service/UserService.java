@@ -43,24 +43,19 @@ public class UserService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request) {
-        return createUserInternal(userMapper.toUser(request), request.getPassword());
+        return createUserInternal(userMapper.toUser(request), request.getPassword(), request.getRoles());
     }
 
     public UserResponse registerUser(RegisterRequest request) {
-        return createUserInternal(userMapper.toUser(request), request.getPassword());
+        return createUserInternal(userMapper.toUser(request), request.getPassword(), null);
     }
 
-    private UserResponse createUserInternal(User user, String rawPassword) {
+    private UserResponse createUserInternal(User user, String rawPassword, List<String> requestedRoles) {
         if (userRepository.existsByEmail(user.getEmail())) throw new AppException(ErrorCode.USER_EXISTED);
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setStatus(UserStatus.ACTIVE);
 
-        HashSet<Role> roles = new HashSet<>();
-        roles.add(roleRepository
-                .findById(PredefinedRole.USER_ROLE)
-                .orElseThrow(() -> new IllegalStateException("USER role must exist before creating users")));
-
-        user.setRoles(roles);
+        user.setRoles(resolveRoles(requestedRoles));
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
@@ -69,9 +64,18 @@ public class UserService {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
 
-        User user = userRepository.findByEmail(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = userRepository.findByEmail(name)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return userMapper.toUserResponse(user);
+        System.out.println("ENTITY PHONE = " + user.getPhone());
+        System.out.println("ENTITY ADDRESS = " + user.getAddress());
+
+        UserResponse response = userMapper.toUserResponse(user);
+
+        System.out.println("DTO PHONE = " + response.getPhone());
+        System.out.println("DTO ADDRESS = " + response.getAddress());
+
+        return response;
     }
 
     public UserResponse updateMyInfo(UpdateMyInfoRequest request) {
@@ -154,6 +158,18 @@ public class UserService {
         } catch (IllegalArgumentException exception) {
             throw new AppException(ErrorCode.INVALID_USER_STATUS);
         }
+    }
+
+    private HashSet<Role> resolveRoles(List<String> requestedRoles) {
+        if (requestedRoles == null || requestedRoles.isEmpty()) {
+            HashSet<Role> roles = new HashSet<>();
+            roles.add(roleRepository
+                    .findById(PredefinedRole.USER_ROLE)
+                    .orElseThrow(() -> new IllegalStateException("USER role must exist before creating users")));
+            return roles;
+        }
+
+        return new HashSet<>(roleRepository.findAllById(requestedRoles));
     }
 }
 

@@ -42,6 +42,22 @@ public class BookService {
         return bookRepository.save(book);
     }
 
+    public Book update(UUID id, Book request) {
+        Book book = getById(id);
+        book.setTitle(request.getTitle());
+        book.setAuthor(request.getAuthor());
+        book.setCategory(request.getCategory());
+        book.setPrice(request.getPrice());
+        book.setRating(request.getRating());
+        book.setStock(request.getStock());
+        book.setImage(request.getImage());
+        return bookRepository.save(book);
+    }
+
+    public void delete(UUID id) {
+        bookRepository.delete(getById(id));
+    }
+
     private Sort resolveSort(String sortBy) {
         if (sortBy == null || sortBy.isBlank() || "popular".equalsIgnoreCase(sortBy)) {
             return Sort.by(
