@@ -2,6 +2,8 @@ package com.duynam.identityservice.service;
 
 import com.duynam.identityservice.dto.response.BookPageResponse;
 import com.duynam.identityservice.entity.Book;
+import com.duynam.identityservice.exception.AppException;
+import com.duynam.identityservice.exception.ErrorCode;
 import com.duynam.identityservice.repository.BookRepository;
 import com.duynam.identityservice.repository.specification.BookSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,7 @@ public class BookService {
 
     public Book getById(UUID id) {
         return bookRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
     }
 
     public Book create(Book book) {

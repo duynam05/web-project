@@ -10,7 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import com.duynam.identityservice.dto.request.ApiResponse;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +28,15 @@ public class GlobalExceptionHandler {
 
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
         apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+
+        return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiResponse> handlingTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(ErrorCode.INVALID_REQUEST_BODY.getCode());
+        apiResponse.setMessage("Invalid book id");
 
         return ResponseEntity.badRequest().body(apiResponse);
     }
