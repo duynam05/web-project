@@ -130,4 +130,7 @@ Hiện tại, Books API được thiết kế chủ yếu phục vụ hiển th�
     "image": "https://link_anh"
 }
 <img width="971" height="737" alt="Screenshot 2026-04-23 at 21 10 17" src="https://github.com/user-attachments/assets/84ac4136-1e6e-4376-b0b2-530dbc53bfbd" />
-
+#### GET /books
+- Mô tả: Lấy danh sách sách
+- Auth: Public
+<img width="970" height="776" alt="Screenshot 2026-04-23 at 21 53 42" src="https://github.com/user-attachments/assets/ab761f91-cefc-4f90-8dc2-89bfb55b1ab2" />
