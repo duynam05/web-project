@@ -1,55 +1,146 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  useEffect
+} from 'react';
+import { buildApiUrl } from '../config/api';
+import { toast } from 'react-toastify';
 
-const CartContext = createContext();
+const CartStateContext = createContext(null);
+const CartActionsContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  // Load từ localStorage khi khởi động
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
+  const [cart, setCart] = useState({
+    items: [],
+    totalItems: 0,
+    totalQuantity: 0,
+    totalPrice: 0
   });
 
-  // Lưu vào localStorage mỗi khi cart thay đổi
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const exist = prev.find((item) => item.id === product.id);
-      if (exist) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prev, { ...product, quantity: 1 }];
+  const resetCart = () => {
+    setCart({
+      items: [],
+      totalItems: 0,
+      totalQuantity: 0,
+      totalPrice: 0
     });
   };
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
+  useEffect(() => {
+    const handleLogout = () => {
+      resetCart();
+    };
+  
+    window.addEventListener("logout", handleLogout);
+  
+    return () => {
+      window.removeEventListener("logout", handleLogout);
+    };
+  }, []);
 
-  const updateQuantity = (id, amount) => {
-    setCart((prev) => 
-      prev.map(item => {
-        if (item.id === id) {
-          return { ...item, quantity: Math.max(1, item.quantity + amount) };
+  const cartItemCount =
+    cart?.items?.reduce((sum, i) => sum + i.quantity, 0) || 0;
+
+    const fetchCart = useCallback(async () => {
+      try {
+        const token = localStorage.getItem("token");
+    
+        if (!token) {
+          setCart({
+            items: [],
+            totalItems: 0,
+            totalQuantity: 0,
+            totalPrice: 0
+          });
+          return;
         }
-        return item;
-      })
-    );
-  };
+    
+        const res = await fetch(buildApiUrl('/cart'), {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+    
+        if (res.status === 401) {
+          console.warn("Unauthorized cart");
+          setCart({
+            items: [],
+            totalItems: 0,
+            totalQuantity: 0,
+            totalPrice: 0
+          });
+          return;
+        }
+    
+        const data = await res.json();
+    
+        if (!res.ok) {
+          throw new Error(data?.message || "Load cart failed");
+        }
+    
+        setCart(data.result || {
+          items: [],
+          totalItems: 0,
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+    
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải giỏ hàng");
+    
+        setCart({
+          items: [],
+          totalItems: 0,
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+      }
+    }, []);
 
-  const clearCart = () => setCart([]);
+  // wrapper actions để show toast UI đồng nhất
+  const addToCartSuccess = useCallback((msg = "Đã thêm vào giỏ hàng") => {
+    toast.success(msg);
+  }, []);
 
-  const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const removeFromCartSuccess = useCallback((msg = "Đã xóa sản phẩm") => {
+    toast.info(msg);
+  }, []);
+
+  const updateCartSuccess = useCallback((msg = "Đã cập nhật giỏ hàng") => {
+    toast.success(msg);
+  }, []);
+
+  const stateValue = useMemo(() => ({
+    cart,
+    cartItemCount
+  }), [cart, cartItemCount]);
+
+  const actionsValue = useMemo(() => ({
+    setCart,
+    fetchCart,
+    resetCart,
+    addToCartSuccess,
+    removeFromCartSuccess,
+    updateCartSuccess
+  }), [
+    fetchCart,
+    addToCartSuccess,
+    removeFromCartSuccess,
+    updateCartSuccess
+  ]);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, totalAmount }}>
-      {children}
-    </CartContext.Provider>
+    <CartStateContext.Provider value={stateValue}>
+      <CartActionsContext.Provider value={actionsValue}>
+        {children}
+      </CartActionsContext.Provider>
+    </CartStateContext.Provider>
   );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCartState = () => useContext(CartStateContext);
+export const useCartActions = () => useContext(CartActionsContext);
