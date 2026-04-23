@@ -18,6 +18,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderResponse {
     String orderId;
+    String customerId;
+    String customerEmail;
+    String customerName;
     BigDecimal totalPrice;
     String status;
     String phone;

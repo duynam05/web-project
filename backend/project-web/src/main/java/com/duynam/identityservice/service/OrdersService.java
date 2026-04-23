@@ -3,8 +3,10 @@ package com.duynam.identityservice.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -105,9 +107,23 @@ public class OrdersService {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders() {
+        return ordersRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::toOrderResponse)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(String email, UUID orderId) {
         return toOrderResponse(findOrderForUser(email, orderId));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderByIdForAdmin(UUID orderId) {
+        return toOrderResponse(findOrderForAdmin(orderId));
     }
 
     @Transactional
@@ -136,8 +152,63 @@ public class OrdersService {
         return toOrderResponse(ordersRepository.save(order));
     }
 
+    @Transactional
+    public OrderResponse cancelOrder(String email, UUID orderId) {
+        Orders order = findOrderForUser(email, orderId);
+
+        if (!canCancelOrder(order.getStatus())) {
+            throw new AppException(ErrorCode.ORDER_CANNOT_BE_CANCELLED);
+        }
+
+        for (OrderItems item : order.getItems()) {
+            Book book = item.getBook();
+            Integer currentStock = book.getStock() != null ? book.getStock() : 0;
+            book.setStock(currentStock + item.getQuantity());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setPaymentStatus(resolveCancelledPaymentStatus(order.getPaymentStatus(), order.getPaymentMethod()));
+
+        return toOrderResponse(ordersRepository.save(order));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public OrderResponse updateOrderStatus(UUID orderId, String rawStatus) {
+        Orders order = findOrderForAdmin(orderId);
+        String nextStatus = parseOrderStatus(rawStatus);
+
+        if (nextStatus.equals(order.getStatus())) {
+            return toOrderResponse(order);
+        }
+
+        if (!isTransitionAllowed(order.getStatus(), nextStatus)) {
+            throw new AppException(ErrorCode.ORDER_STATUS_TRANSITION_NOT_ALLOWED);
+        }
+
+        if (OrderStatus.CANCELLED.equals(nextStatus)) {
+            restoreStock(order);
+            order.setPaymentStatus(resolveCancelledPaymentStatus(order.getPaymentStatus(), order.getPaymentMethod()));
+        } else if (OrderStatus.COMPLETED.equals(nextStatus)
+                && PaymentMethod.COD.equals(order.getPaymentMethod())
+                && !PaymentStatus.PAID.equals(order.getPaymentStatus())) {
+            order.setPaymentStatus(PaymentStatus.PAID);
+            if (order.getPaidAt() == null) {
+                order.setPaidAt(LocalDateTime.now());
+            }
+        }
+
+        order.setStatus(nextStatus);
+        return toOrderResponse(ordersRepository.save(order));
+    }
+
     private Orders findOrderForUser(String email, UUID orderId) {
         return ordersRepository.findByIdAndUserEmail(orderId, email)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+    }
+
+    private Orders findOrderForAdmin(UUID orderId) {
+        return ordersRepository.findWithUserById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
     }
 
@@ -168,6 +239,60 @@ public class OrdersService {
         return PaymentStatus.UNPAID;
     }
 
+    private boolean canCancelOrder(String status) {
+        return OrderStatus.PENDING.equals(status)
+                || OrderStatus.PENDING_PAYMENT.equals(status)
+                || OrderStatus.CONFIRMED.equals(status);
+    }
+
+    private String parseOrderStatus(String rawStatus) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
+        }
+
+        String normalized = rawStatus.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case OrderStatus.PENDING,
+                    OrderStatus.PENDING_PAYMENT,
+                    OrderStatus.CONFIRMED,
+                    OrderStatus.SHIPPING,
+                    OrderStatus.CANCELLED,
+                    OrderStatus.COMPLETED -> normalized;
+            default -> throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
+        };
+    }
+
+    private boolean isTransitionAllowed(String currentStatus, String nextStatus) {
+        return switch (currentStatus) {
+            case OrderStatus.PENDING -> OrderStatus.CONFIRMED.equals(nextStatus) || OrderStatus.CANCELLED.equals(nextStatus);
+            case OrderStatus.PENDING_PAYMENT -> OrderStatus.CONFIRMED.equals(nextStatus) || OrderStatus.CANCELLED.equals(nextStatus);
+            case OrderStatus.CONFIRMED -> OrderStatus.SHIPPING.equals(nextStatus) || OrderStatus.CANCELLED.equals(nextStatus);
+            case OrderStatus.SHIPPING -> OrderStatus.COMPLETED.equals(nextStatus);
+            case OrderStatus.CANCELLED, OrderStatus.COMPLETED -> false;
+            default -> false;
+        };
+    }
+
+    private void restoreStock(Orders order) {
+        for (OrderItems item : order.getItems()) {
+            Book book = item.getBook();
+            Integer currentStock = book.getStock() != null ? book.getStock() : 0;
+            book.setStock(currentStock + item.getQuantity());
+        }
+    }
+
+    private String resolveCancelledPaymentStatus(String paymentStatus, String paymentMethod) {
+        if (PaymentStatus.PAID.equals(paymentStatus)) {
+            return PaymentStatus.REFUNDED;
+        }
+
+        if (PaymentMethod.ONLINE.equals(paymentMethod)) {
+            return PaymentStatus.FAILED;
+        }
+
+        return PaymentStatus.UNPAID;
+    }
+
     private OrderResponse toOrderResponse(Orders order) {
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
@@ -183,6 +308,9 @@ public class OrdersService {
 
         return OrderResponse.builder()
                 .orderId(order.getId().toString())
+                .customerId(order.getUser() != null ? order.getUser().getId() : null)
+                .customerEmail(order.getUser() != null ? order.getUser().getEmail() : null)
+                .customerName(order.getUser() != null ? order.getUser().getFullName() : null)
                 .totalPrice(order.getTotalPrice())
                 .status(order.getStatus())
                 .phone(order.getPhone())

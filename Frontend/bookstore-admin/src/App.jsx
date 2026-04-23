@@ -3,14 +3,16 @@ import './App.css';
 import { useEffect, useState } from 'react';
 
 import MaterialIcon from './components/MaterialIcon';
-import { apiRequest } from './lib/apiClient';
 import { USER_APP_LOGIN_URL } from './config/api';
-import DashboardPhase1 from './pages/DashboardPhase1';
+import { apiRequest } from './lib/apiClient';
 import { BooksPhase1, BookFormPhase1 } from './pages/BooksPhase1';
-import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
+import DashboardPhase1 from './pages/DashboardPhase1';
+import OrdersPage from './pages/OrdersPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
 
 const TOKEN_STORAGE_KEY = 'admin_token';
+
 const pages = [
   { key: 'dashboard', label: 'Bảng điều khiển', icon: 'dashboard' },
   { key: 'books', label: 'Sách', icon: 'book' },
@@ -39,7 +41,12 @@ function formatError(error) {
 }
 
 function initialsOf(value = '') {
-  return value.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'AD';
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'AD';
 }
 
 function SideNav({ currentPage, onNavigate, onLogout }) {
@@ -54,11 +61,17 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
 
       <nav className="flex flex-1 flex-col gap-1 px-4">
         {pages.map((item) => {
-          const active = currentPage === item.key || (item.key === 'books' && currentPage.startsWith('book-')) || (item.key === 'users' && currentPage.startsWith('user-'));
+          const active =
+            currentPage === item.key ||
+            (item.key === 'books' && currentPage.startsWith('book-')) ||
+            (item.key === 'users' && currentPage.startsWith('user-'));
+
           return (
             <button
               key={item.key}
-              className={`flex items-center gap-3 px-4 py-2 text-left transition-colors ${active ? 'rounded-lg bg-blue-50/50 font-semibold text-blue-600' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              className={`flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                active ? 'rounded-lg bg-blue-50/50 font-semibold text-blue-600' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
               type="button"
               onClick={() => onNavigate(item.key)}
             >
@@ -81,10 +94,15 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
 
 function TopBar({ currentPage, adminUser }) {
   const placeholder =
-    currentPage === 'dashboard' ? 'Tìm kiếm sách, đơn hàng...' :
-    currentPage === 'books' ? 'Tìm kiếm sách, tác giả hoặc ISBN...' :
-    currentPage === 'users' ? 'Tìm kiếm người dùng...' :
-    'Tìm kiếm trong hệ thống...';
+    currentPage === 'dashboard'
+      ? 'Tìm kiếm sách, đơn hàng...'
+      : currentPage === 'books'
+        ? 'Tìm kiếm sách, tác giả hoặc ISBN...'
+        : currentPage === 'users'
+          ? 'Tìm kiếm người dùng...'
+          : currentPage === 'orders'
+            ? 'Tìm kiếm đơn hàng...'
+            : 'Tìm kiếm trong hệ thống...';
 
   return (
     <header className="sticky top-0 right-0 z-30 ml-64 flex h-16 items-center justify-between border-b border-slate-100 bg-white/80 px-8 shadow-sm backdrop-blur-md">
@@ -115,6 +133,7 @@ function TopBar({ currentPage, adminUser }) {
 
 function AuthGate({ status, authError, onGoLogin }) {
   const title = status === 'unauthorized' ? 'Không có quyền truy cập' : 'Cần đăng nhập quản trị';
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),transparent_28%),linear-gradient(180deg,_#eff6ff_0%,_#f8fafc_100%)] p-6">
       <div className="mx-auto mt-28 w-full max-w-xl rounded-3xl bg-white/95 p-8 shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
@@ -137,10 +156,13 @@ function App() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [books, setBooks] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [booksLoading, setBooksLoading] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [usersError, setUsersError] = useState('');
   const [booksError, setBooksError] = useState('');
+  const [ordersError, setOrdersError] = useState('');
   const [userFormError, setUserFormError] = useState('');
   const [bookFormError, setBookFormError] = useState('');
   const [submittingUser, setSubmittingUser] = useState(false);
@@ -148,8 +170,11 @@ function App() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [busyUserId, setBusyUserId] = useState('');
   const [busyBookId, setBusyBookId] = useState('');
+  const [busyOrderId, setBusyOrderId] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [editingBook, setEditingBook] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetailLoading, setOrderDetailLoading] = useState(false);
 
   useEffect(() => {
     const nextToken = extractTokenFromUrl();
@@ -172,12 +197,14 @@ function App() {
     }
 
     let active = true;
+
     const loadProfile = async () => {
       setAuthStatus('loading');
       setAuthError('');
       try {
         const profile = await apiRequest('/users/my-info', { token });
         const isAdmin = profile.roles?.some((role) => role.name === 'ADMIN');
+
         if (!isAdmin) {
           localStorage.removeItem(TOKEN_STORAGE_KEY);
           if (active) {
@@ -187,6 +214,7 @@ function App() {
           }
           return;
         }
+
         if (active) {
           setAdminUser(profile);
           setAuthStatus('authenticated');
@@ -200,8 +228,12 @@ function App() {
         }
       }
     };
+
     loadProfile();
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   const navigate = (nextPage) => {
@@ -236,10 +268,28 @@ function App() {
     }
   };
 
+  const loadOrders = async () => {
+    setOrdersLoading(true);
+    setOrdersError('');
+    try {
+      const orderList = await apiRequest('/api/orders/admin', { token });
+      setOrders(orderList);
+      setSelectedOrder((current) => {
+        if (!current) return null;
+        return orderList.find((order) => order.orderId === current.orderId) || null;
+      });
+    } catch (error) {
+      setOrdersError(formatError(error));
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
     loadUsers();
     loadBooks();
+    loadOrders();
   }, [authStatus]);
 
   const handleLogout = () => {
@@ -252,10 +302,27 @@ function App() {
     setSubmittingUser(true);
     setUserFormError('');
     try {
-      const createdUser = await apiRequest('/users', { token, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: payload.email, password: payload.password, fullName: payload.fullName, roles: payload.roles }) });
+      const createdUser = await apiRequest('/users', {
+        token,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: payload.email,
+          password: payload.password,
+          fullName: payload.fullName,
+          roles: payload.roles,
+        }),
+      });
+
       if (payload.status === 'DISABLED') {
-        await apiRequest(`/users/${createdUser.id}/status`, { token, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'DISABLED' }) });
+        await apiRequest(`/users/${createdUser.id}/status`, {
+          token,
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'DISABLED' }),
+        });
       }
+
       await loadUsers();
       navigate('users');
     } catch (error) {
@@ -270,10 +337,22 @@ function App() {
     setSubmittingUser(true);
     setUserFormError('');
     try {
-      await apiRequest(`/users/${editingUser.id}`, { token, method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: payload.fullName, roles: payload.roles }) });
+      await apiRequest(`/users/${editingUser.id}`, {
+        token,
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: payload.fullName, roles: payload.roles }),
+      });
+
       if (payload.status !== editingUser.status) {
-        await apiRequest(`/users/${editingUser.id}/status`, { token, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: payload.status }) });
+        await apiRequest(`/users/${editingUser.id}/status`, {
+          token,
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: payload.status }),
+        });
       }
+
       await loadUsers();
       setEditingUser(null);
       navigate('users');
@@ -288,7 +367,12 @@ function App() {
     setBusyUserId(user.id);
     setUsersError('');
     try {
-      await apiRequest(`/users/${user.id}/status`, { token, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' }) });
+      await apiRequest(`/users/${user.id}/status`, {
+        token,
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' }),
+      });
       await loadUsers();
     } catch (error) {
       setUsersError(formatError(error));
@@ -331,7 +415,12 @@ function App() {
     setSubmittingBook(true);
     setBookFormError('');
     try {
-      await apiRequest('/books', { token, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      await apiRequest('/books', {
+        token,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       await loadBooks();
       navigate('books');
     } catch (error) {
@@ -346,7 +435,12 @@ function App() {
     setSubmittingBook(true);
     setBookFormError('');
     try {
-      await apiRequest(`/books/${editingBook.id}`, { token, method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      await apiRequest(`/books/${editingBook.id}`, {
+        token,
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       await loadBooks();
       setEditingBook(null);
       navigate('books');
@@ -371,19 +465,162 @@ function App() {
     }
   };
 
-  if (authStatus === 'loading') return <AuthGate status="loading" authError="Đang xác thực tài khoản quản trị..." onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
-  if (authStatus !== 'authenticated') return <AuthGate status={authStatus} authError={authError} onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
+  const handleViewOrder = async (orderId) => {
+    setOrderDetailLoading(true);
+    setOrdersError('');
+    try {
+      const detail = await apiRequest(`/api/orders/admin/${orderId}`, { token });
+      setSelectedOrder(detail);
+    } catch (error) {
+      setOrdersError(formatError(error));
+    } finally {
+      setOrderDetailLoading(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (order, nextStatus) => {
+    const actionLabel = nextStatus === 'CANCELLED' ? 'hủy' : 'cập nhật';
+    if (!window.confirm(`Bạn có chắc muốn ${actionLabel} đơn ${order.orderId}?`)) return;
+
+    setBusyOrderId(order.orderId);
+    setOrdersError('');
+    try {
+      const updatedOrder = await apiRequest(`/api/orders/admin/${order.orderId}/status`, {
+        token,
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      setOrders((current) => current.map((item) => (item.orderId === updatedOrder.orderId ? updatedOrder : item)));
+      setSelectedOrder((current) => (current?.orderId === updatedOrder.orderId ? updatedOrder : current));
+    } catch (error) {
+      setOrdersError(formatError(error));
+    } finally {
+      setBusyOrderId('');
+    }
+  };
+
+  if (authStatus === 'loading') {
+    return <AuthGate status="loading" authError="Đang xác thực tài khoản quản trị..." onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
+  }
+
+  if (authStatus !== 'authenticated') {
+    return <AuthGate status={authStatus} authError={authError} onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
+  }
 
   let content = <DashboardPhase1 />;
-  if (page === 'books') content = <BooksPhase1 books={books} loading={booksLoading} error={booksError} busyBookId={busyBookId} onCreate={() => { setEditingBook(null); setBookFormError(''); navigate('book-create'); }} onEdit={(book) => { setEditingBook(book); setBookFormError(''); navigate('book-edit'); }} onDelete={handleDeleteBook} onRefresh={loadBooks} />;
-  else if (page === 'book-create') content = <BookFormPhase1 mode="create" submitting={submittingBook} uploadLoading={uploadLoading} error={bookFormError} onCancel={() => navigate('books')} onSubmit={handleCreateBook} onUploadImage={handleUploadBookImage} />;
-  else if (page === 'book-edit') content = <BookFormPhase1 mode="edit" book={editingBook} submitting={submittingBook} uploadLoading={uploadLoading} error={bookFormError} onCancel={() => navigate('books')} onSubmit={handleUpdateBook} onUploadImage={handleUploadBookImage} />;
-  else if (page === 'users') content = <UsersPhase1 users={users} loading={usersLoading} error={usersError} busyUserId={busyUserId} onCreate={() => { setEditingUser(null); setUserFormError(''); navigate('user-create'); }} onEdit={(user) => { setEditingUser(user); setUserFormError(''); navigate('user-edit'); }} onToggleStatus={handleToggleUserStatus} onDelete={handleDeleteUser} />;
-  else if (page === 'user-create') content = <UserFormPhase1 mode="create" roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]} submitting={submittingUser} error={userFormError} onCancel={() => navigate('users')} onSubmit={handleCreateUser} />;
-  else if (page === 'user-edit') content = <UserFormPhase1 mode="edit" user={editingUser} roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]} submitting={submittingUser} error={userFormError} onCancel={() => navigate('users')} onSubmit={handleUpdateUser} />;
-  else if (page === 'orders') content = <PlaceholderPage title="Đơn hàng" description="" />;
-  else if (page === 'reports') content = <PlaceholderPage title="Báo cáo" description="" />;
-  else if (page === 'settings') content = <PlaceholderPage title="Cài đặt" description="" />;
+
+  if (page === 'books') {
+    content = (
+      <BooksPhase1
+        books={books}
+        loading={booksLoading}
+        error={booksError}
+        busyBookId={busyBookId}
+        onCreate={() => {
+          setEditingBook(null);
+          setBookFormError('');
+          navigate('book-create');
+        }}
+        onEdit={(book) => {
+          setEditingBook(book);
+          setBookFormError('');
+          navigate('book-edit');
+        }}
+        onDelete={handleDeleteBook}
+        onRefresh={loadBooks}
+      />
+    );
+  } else if (page === 'book-create') {
+    content = (
+      <BookFormPhase1
+        mode="create"
+        submitting={submittingBook}
+        uploadLoading={uploadLoading}
+        error={bookFormError}
+        onCancel={() => navigate('books')}
+        onSubmit={handleCreateBook}
+        onUploadImage={handleUploadBookImage}
+      />
+    );
+  } else if (page === 'book-edit') {
+    content = (
+      <BookFormPhase1
+        mode="edit"
+        book={editingBook}
+        submitting={submittingBook}
+        uploadLoading={uploadLoading}
+        error={bookFormError}
+        onCancel={() => navigate('books')}
+        onSubmit={handleUpdateBook}
+        onUploadImage={handleUploadBookImage}
+      />
+    );
+  } else if (page === 'users') {
+    content = (
+      <UsersPhase1
+        users={users}
+        loading={usersLoading}
+        error={usersError}
+        busyUserId={busyUserId}
+        onCreate={() => {
+          setEditingUser(null);
+          setUserFormError('');
+          navigate('user-create');
+        }}
+        onEdit={(user) => {
+          setEditingUser(user);
+          setUserFormError('');
+          navigate('user-edit');
+        }}
+        onToggleStatus={handleToggleUserStatus}
+        onDelete={handleDeleteUser}
+      />
+    );
+  } else if (page === 'user-create') {
+    content = (
+      <UserFormPhase1
+        mode="create"
+        roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]}
+        submitting={submittingUser}
+        error={userFormError}
+        onCancel={() => navigate('users')}
+        onSubmit={handleCreateUser}
+      />
+    );
+  } else if (page === 'user-edit') {
+    content = (
+      <UserFormPhase1
+        mode="edit"
+        user={editingUser}
+        roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]}
+        submitting={submittingUser}
+        error={userFormError}
+        onCancel={() => navigate('users')}
+        onSubmit={handleUpdateUser}
+      />
+    );
+  } else if (page === 'orders') {
+    content = (
+      <OrdersPage
+        orders={orders}
+        loading={ordersLoading}
+        error={ordersError}
+        busyOrderId={busyOrderId}
+        selectedOrder={selectedOrder}
+        detailLoading={orderDetailLoading}
+        onRefresh={loadOrders}
+        onViewOrder={handleViewOrder}
+        onCloseDetail={() => setSelectedOrder(null)}
+        onUpdateStatus={handleUpdateOrderStatus}
+      />
+    );
+  } else if (page === 'reports') {
+    content = <PlaceholderPage title="Báo cáo" description="" />;
+  } else if (page === 'settings') {
+    content = <PlaceholderPage title="Cài đặt" description="" />;
+  }
 
   return (
     <div className="bg-white font-['Inter'] text-slate-900 antialiased">

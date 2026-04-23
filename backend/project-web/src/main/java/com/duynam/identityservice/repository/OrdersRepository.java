@@ -9,10 +9,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OrdersRepository extends JpaRepository<Orders, UUID> {
+    @EntityGraph(attributePaths = {"user", "items", "items.book"})
+    List<Orders> findAllByOrderByCreatedAtDesc();
+
     @EntityGraph(attributePaths = {"items", "items.book"})
     List<Orders> findByUserEmailOrderByCreatedAtDesc(String email);
 
     @EntityGraph(attributePaths = {"items", "items.book"})
     Optional<Orders> findByIdAndUserEmail(UUID id, String email);
+
+    @EntityGraph(attributePaths = {"user", "items", "items.book"})
+    Optional<Orders> findWithUserById(UUID id);
 }
 
