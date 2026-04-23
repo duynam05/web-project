@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import { useHistory } from '../contexts/HistoryContext';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, extractResultList } from '../config/api';
 
 const HOME_BOOK_LIMIT = 12;
 
@@ -12,7 +12,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(buildApiUrl(`/books?size=${HOME_BOOK_LIMIT}&sort=rating`))
+    fetch(buildApiUrl('/books'))
       .then((res) => {
         if (!res.ok) {
           throw new Error('Failed to load home books');
@@ -21,8 +21,8 @@ const Home = () => {
         return res.json();
       })
       .then((data) => {
-        const payload = data?.result || data;
-        setBooks(Array.isArray(payload?.content) ? payload.content : []);
+        const bookList = extractResultList(data);
+        setBooks(bookList.slice(0, HOME_BOOK_LIMIT));
       })
       .catch((err) => {
         console.error(err);

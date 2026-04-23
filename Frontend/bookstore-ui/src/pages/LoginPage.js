@@ -1,89 +1,57 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
-import { jwtDecode } from 'jwt-decode';
-
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { LogIn } from 'lucide-react';
+import { jwtDecode } from "jwt-decode";
 import { buildApiUrl } from '../config/api';
-
-const ADMIN_APP_URL = process.env.REACT_APP_ADMIN_URL || 'http://localhost:5173';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    try {
-      const res = await fetch(buildApiUrl('/auth/token'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      const token = data.result?.token;
-
-      if (!token) {
-        setError('Sai tai khoan hoac mat khau');
-        return;
-      }
-
-      const decoded = jwtDecode(token);
-      const role = decoded.scope?.includes('ROLE_ADMIN') ? 'ADMIN' : 'USER';
-
-      const profileRes = await fetch(buildApiUrl('/users/my-info'), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const profileData = await profileRes.json();
-
-      if (!profileRes.ok) {
-        throw new Error(profileData.message || 'Khong tai duoc thong tin tai khoan');
-      }
-
-      const profile = profileData.result || {};
-      const user = {
-        email: decoded.sub,
-        fullName: profile.fullName || decoded.sub,
-        name: profile.fullName || decoded.sub,
-        role,
-        roles: profile.roles || [],
-        status: profile.status,
-        avatar: profile.avatar,
-      };
-
-      login(user, token);
-
-      if (role === 'ADMIN') {
-        window.location.href = `${ADMIN_APP_URL}?token=${encodeURIComponent(token)}`;
-        return;
-      }
-
-      navigate(from);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Loi server');
+  
+    const res = await fetch(buildApiUrl('/auth/token'), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+  
+    const data = await res.json();
+    const token = data.result?.token;
+  
+    if (!token) {
+      setError("Sai tài khoản hoặc mật khẩu");
+      return;
     }
+  
+    const decoded = jwtDecode(token);
+  
+    const user = {
+      email: decoded.sub,
+      fullName: decoded.sub,
+      role: decoded.scope
+    };
+  
+    login(user, token);
+    navigate(from);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Dang Nhap</h2>
-          <p className="text-gray-500 mt-2">Chao mung ban quay tro lai Bookstore</p>
+          <h2 className="text-3xl font-bold text-gray-800">Đăng Nhập</h2>
+          <p className="text-gray-500 mt-2">Chào mừng bạn quay trở lại Bookstore</p>
         </div>
 
         {error && (
@@ -109,13 +77,13 @@ const LoginPage = () => {
 
           <div>
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              Mat khau
+              Mật khẩu
             </label>
             <input
               type="password"
               required
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="********"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -125,14 +93,14 @@ const LoginPage = () => {
             type="submit"
             className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
           >
-            <LogIn size={20} /> Dang Nhap
+            <LogIn size={20} /> Đăng Nhập
           </button>
         </form>
 
         <p className="mt-6 text-center text-gray-600 text-sm">
-          Chua co tai khoan?{' '}
+          Chưa có tài khoản?{' '}
           <Link to="/register" className="text-blue-600 font-bold hover:underline">
-            Dang ky ngay
+            Đăng ký ngay
           </Link>
         </p>
       </div>

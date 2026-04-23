@@ -9,22 +9,29 @@ import Cart from './pages/Cart';
 import AccountPage from './pages/AccountPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import CheckoutPage from './pages/CheckoutPage';
-import VNPayGateway from './pages/VNPayGateway';
-import OrderListPage from './pages/OrderListPage';
-import OrderDetailPage from './pages/OrderDetailPage';
-import PrivateRoute from './components/PrivateRoute';
-import { CartProvider, useCart } from './contexts/CartContext';
+import {
+  CartProvider,
+  useCartActions,
+  useCartState
+} from './contexts/CartContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { resolveAvatarUrl, DEFAULT_AVATAR_URL } from './config/api';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import CheckoutPage from './pages/CheckoutPage';
+import VNPayGateway from './pages/VNPayGateway';
+import PrivateRoute from './components/PrivateRoute';
+import OrderListPage from './pages/OrderListPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 
 const Navbar = () => {
-  const { cart } = useCart();
+  const { cartItemCount } = useCartState();
+  const { fetchCart } = useCartActions();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+  // const totalItems = cart?.totalItems || 0;
   const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
@@ -37,6 +44,12 @@ const Navbar = () => {
     setSearchInput('');
   }, [location.pathname, location.search]);
 
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+    }
+  }, [user, fetchCart]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
 
@@ -47,11 +60,9 @@ const Navbar = () => {
       params.set('q', keyword);
     }
 
-    params.set('page', '0');
-
     navigate({
       pathname: '/books',
-      search: params.toString() ? `?${params.toString()}` : '',
+      search: params.toString() ? `?${params.toString()}` : ''
     });
   };
 
@@ -64,47 +75,32 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center gap-4 lg:hidden">
-            <Link to="/books" className="hover:text-blue-600">Sach</Link>
+            <Link to="/books" className="hover:text-blue-600">Sách</Link>
             <Link to="/cart" className="relative p-2 hover:text-blue-600">
               <ShoppingCart size={24} />
-              {totalItems > 0 && (
+              {cartItemCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  {totalItems}
+                  {cartItemCount}
                 </span>
               )}
             </Link>
           </div>
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="relative w-full lg:max-w-xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            className="w-full rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-24 outline-none transition focus:border-blue-400 focus:bg-white"
-            placeholder="Tim sach theo ten hoac tac gia..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-blue-600 px-4 py-1.5 text-sm text-white transition hover:bg-blue-700"
-          >
-            Tim
-          </button>
-        </form>
-
         <div className="hidden items-center gap-6 font-medium lg:flex">
-          <Link to="/" className="hover:text-blue-600">Trang chu</Link>
-          <Link to="/books" className="hover:text-blue-600">Sach</Link>
+          <Link to="/" className="hover:text-blue-600">Trang chủ</Link>
+          <Link to="/books" className="hover:text-blue-600">Sách</Link>
+
           <Link to="/account/orders" className="flex items-center gap-1 hover:text-blue-600">
             <Package size={20} />
-            <span>Don hang</span>
+            <span>Đơn hàng</span>
           </Link>
 
           <Link to="/cart" className="relative p-2 hover:text-blue-600">
             <ShoppingCart size={24} />
-            {totalItems > 0 && (
+            {cartItemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                {totalItems}
+                {cartItemCount}
               </span>
             )}
           </Link>
@@ -120,11 +116,11 @@ const Navbar = () => {
                   e.currentTarget.src = DEFAULT_AVATAR_URL;
                 }}
               />
-              <span className="hidden max-w-[100px] truncate xl:block">{user.name || user.fullName || user.email}</span>
+              <span className="hidden max-w-[100px] truncate xl:block">{user.name}</span>
             </Link>
           ) : (
             <Link to="/login" className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700">
-              <LogIn size={18} /> Dang nhap
+              <LogIn size={18} /> Đăng nhập
             </Link>
           )}
         </div>
@@ -142,12 +138,26 @@ function App() {
             <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 font-sans">
               <Navbar />
               <main className="flex-grow">
+                {/* <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/books" element={<BookList />} />
+                  <Route path="/book/:id" element={<BookDetail />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/account" element={<AccountPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/vnpay-gateway" element={<VNPayGateway />} />
+                </Routes> */}
                 <Routes>
+                  {/* PUBLIC */}
                   <Route path="/" element={<Home />} />
                   <Route path="/books" element={<BookList />} />
                   <Route path="/book/:id" element={<BookDetail />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
+
+                  {/* PROTECTED */}
                   <Route
                     path="/cart"
                     element={
@@ -156,6 +166,7 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                   <Route
                     path="/account"
                     element={
@@ -164,6 +175,7 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                   <Route
                     path="/checkout"
                     element={
@@ -172,6 +184,7 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                   <Route
                     path="/vnpay-gateway"
                     element={
@@ -180,6 +193,7 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                   <Route
                     path="/account/orders"
                     element={
@@ -188,6 +202,7 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                   <Route
                     path="/account/orders/:orderId"
                     element={
@@ -196,8 +211,17 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+
                 </Routes>
+
               </main>
+
+              <ToastContainer
+                position="top-right"
+                autoClose={2000}
+                newestOnTop
+              />
+
               <footer className="mt-auto bg-gray-800 py-8 text-center text-white">
                 <p>&copy; 2024 BookStore. All rights reserved.</p>
               </footer>

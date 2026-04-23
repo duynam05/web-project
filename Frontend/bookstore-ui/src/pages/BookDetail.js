@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import StarRating from '../components/StarRating';
 import { ShoppingCart } from 'lucide-react';
 import { buildApiUrl, resolveImageUrl } from '../config/api';
+import { toast } from 'react-toastify';
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -13,41 +14,62 @@ const BookDetail = () => {
   const { user } = useAuth();
 
   const [book, setBook] = useState(null);
+  const [error, setError] = useState(null);
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState('');
   const [reviews, setReviews] = useState([]);
+  const stock = book?.stock ?? 0;
+  const isOutOfStock = stock === 0;
 
   useEffect(() => {
-    fetch(buildApiUrl(`/books/${id}`))
-      .then((res) => {
+    const fetchBook = async () => {
+      try {
+        const token = localStorage.getItem("token");
+  
+        const res = await fetch(buildApiUrl(`/books/${id}`), {
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : {}
+        });
+  
+        const data = await res.json().catch(() => null);
+  
         if (!res.ok) {
-          throw new Error('Failed to load book');
+          if (res.status === 401) {
+            setError("Bạn cần đăng nhập để xem sách");
+            return;
+          }
+  
+          throw new Error(data?.message || "Không thể tải sách");
         }
-
-        return res.json();
-      })
-      .then((data) => {
+  
         const foundBook = data?.result || data;
-
-        setBook(foundBook || null);
-        setReviews([]);
-
-        if (foundBook?.category) {
-          addToHistory(foundBook.category);
-        }
-      })
-      .catch((err) => console.error(err));
-  }, [id, addToHistory]);
+        setBook(foundBook);
+  
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      }
+    };
+  
+    fetchBook();
+  }, [id]);
 
   const handleAddToCart = async () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để mua hàng!");
+      toast.error("Vui lòng đăng nhập để mua hàng");
       navigate('/login');
+      return;
+    }
+
+    if (isOutOfStock) {
+      toast.error("Sản phẩm đã hết hàng");
       return;
     }
 
     try {
       const token = localStorage.getItem("token");
+    
       const res = await fetch(buildApiUrl('/cart'), {
         method: "POST",
         headers: {
@@ -59,16 +81,36 @@ const BookDetail = () => {
           quantity: 1
         })
       });
-
+    
+      const data = await res.json().catch(() => null);
+    
       if (!res.ok) {
-        throw new Error("Add to cart failed");
+        let msg = "Có lỗi xảy ra";
+    
+        switch (data?.code) {
+          case 1011:
+            msg = "Số lượng vượt quá tồn kho";
+            break;
+          case 1006:
+            msg = "Phiên đăng nhập hết hạn";
+            navigate('/login');
+            break;
+          default:
+            msg = data?.message || msg;
+        }
+    
+        toast.error(msg);
+        return;
       }
-
-      alert("Đã thêm sản phẩm vào giỏ hàng!");
+    
+      toast.success("Đã thêm sản phẩm vào giỏ hàng");
+    
     } catch (err) {
       console.error(err);
-      alert("Lỗi server!");
+      toast.error("Không thể kết nối server");
     }
+
+
   };
 
   const handleSubmitReview = (e) => {
@@ -96,8 +138,12 @@ const BookDetail = () => {
     setUserRating(0);
   };
 
+  if (error) {
+    return <div className="p-10 text-center text-red-500">{error}</div>;
+  }
+  
   if (!book) {
-    return <div className="p-10 text-center">Không tìm thấy sách.</div>;
+    return <div className="p-10 text-center">Loading...</div>;
   }
 
   return (
@@ -129,9 +175,14 @@ const BookDetail = () => {
             <span className="text-gray-500">({reviews.length} đánh giá)</span>
           </div>
 
+          <p className="mb-4 text-sm text-gray-500">
+            {isOutOfStock ? 'Hết hàng' : `Còn ${stock} sản phẩm`}
+          </p>
+
           <button
             onClick={handleAddToCart}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 font-bold text-white transition hover:bg-blue-700"
+            disabled={isOutOfStock}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingCart /> Thêm vào giỏ hàng
           </button>

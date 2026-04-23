@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import { Search } from 'lucide-react';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, extractResultList } from '../config/api';
 
 const PAGE_SIZE = 12;
 
@@ -19,6 +19,71 @@ const BookList = () => {
   const [categories, setCategories] = useState(['All']);
   const [loading, setLoading] = useState(true);
 
+  const filteredBooks = useMemo(() => {
+    let result = books;
+  
+    if (selectedCategory !== 'All') {
+      result = result.filter(b => b.category === selectedCategory);
+    }
+  
+    if (debouncedSearchTerm) {
+      const lower = debouncedSearchTerm.toLowerCase();
+      result = result.filter(b =>
+        b.title.toLowerCase().includes(lower) ||
+        b.author.toLowerCase().includes(lower)
+      );
+    }
+  
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'rating': return b.rating - a.rating;
+        case 'price_asc': return a.price - b.price;
+        case 'price_desc': return b.price - a.price;
+        default: return b.rating - a.rating;
+      }
+    });
+  
+    return result;
+  }, [books, debouncedSearchTerm, selectedCategory, sortBy]);
+
+
+  useEffect(() => {
+    setLoading(true);
+  
+    fetch(buildApiUrl('/books'))
+      .then(res => res.json())
+      .then(data => {
+        const bookList = extractResultList(data);
+
+        setBooks(bookList);
+
+        const categoryOptions = [
+          'All',
+          ...new Set(bookList.map(b => b.category).filter(Boolean))
+        ];
+        setCategories(categoryOptions);
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setTotalPages(Math.ceil(filteredBooks.length / PAGE_SIZE));
+    setTotalElements(filteredBooks.length);
+  }, [filteredBooks]);
+
+  const paginatedBooks = useMemo(() => {
+    const start = page * PAGE_SIZE;
+    return filteredBooks.slice(start, start + PAGE_SIZE);
+  }, [filteredBooks, page]);
+
+  useEffect(() => {
+    const maxPage = Math.max(Math.ceil(filteredBooks.length / PAGE_SIZE) - 1, 0);
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [filteredBooks, page]);
+
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
     setSelectedCategory(searchParams.get('category') || 'All');
@@ -33,6 +98,8 @@ const BookList = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  const searchParamsString = searchParams.toString();
 
   useEffect(() => {
     const nextParams = new URLSearchParams();
@@ -49,76 +116,30 @@ const BookList = () => {
       nextParams.set('sort', sortBy);
     }
 
-    if (page > 0) {
+    const currentQ = searchParams.get('q') || '';
+    const currentCategory = searchParams.get('category') || 'All';
+    const currentSort = searchParams.get('sort') || 'popular';
+
+    if (
+      debouncedSearchTerm !== currentQ ||
+      selectedCategory !== currentCategory ||
+      sortBy !== currentSort
+    ) {
+      nextParams.set('page', '0'); // reset khi filter đổi
+    } else if (page > 0) {
       nextParams.set('page', page.toString());
     }
 
-    const current = searchParams.toString();
+    // const current = searchParams.toString();
     const next = nextParams.toString();
+    const current = searchParamsString;
 
     if (current !== next) {
       setSearchParams(nextParams, { replace: true });
     }
-  }, [debouncedSearchTerm, page, searchParams, selectedCategory, setSearchParams, sortBy]);
+  }, [debouncedSearchTerm, page, searchParamsString, selectedCategory, sortBy, setSearchParams]);
 
-  useEffect(() => {
-    const query = new URLSearchParams({
-      sort: sortBy,
-      page: page.toString(),
-      size: PAGE_SIZE.toString()
-    });
-
-    if (debouncedSearchTerm) {
-      query.set('q', debouncedSearchTerm);
-    }
-
-    if (selectedCategory !== 'All') {
-      query.set('category', selectedCategory);
-    }
-
-    setLoading(true);
-
-    fetch(buildApiUrl(`/books?${query.toString()}`))
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failed to load books');
-        }
-
-        return res.json();
-      })
-      .then((data) => {
-        const payload = data?.result || data;
-
-        setBooks(Array.isArray(payload?.content) ? payload.content : []);
-        setPage(Number.isInteger(payload?.page) ? payload.page : 0);
-        setTotalPages(Number.isInteger(payload?.totalPages) ? payload.totalPages : 0);
-        setTotalElements(Number.isInteger(payload?.totalElements) ? payload.totalElements : 0);
-      })
-      .catch((err) => {
-        console.error(err);
-        setBooks([]);
-        setTotalPages(0);
-        setTotalElements(0);
-      })
-      .finally(() => setLoading(false));
-  }, [debouncedSearchTerm, page, selectedCategory, sortBy]);
-
-  useEffect(() => {
-    fetch(buildApiUrl('/books?size=1000&sort=title_asc'))
-      .then((res) => res.json())
-      .then((data) => {
-        const payload = data?.result || data;
-        const categoryOptions = [
-          'All',
-          ...new Set((payload?.content || []).map((b) => b.category).filter(Boolean))
-        ];
-
-        setCategories(categoryOptions);
-      })
-      .catch((err) => console.error(err));
-  }, []);
-
-  const hasBooks = useMemo(() => books.length > 0, [books]);
+  const hasBooks = filteredBooks.length > 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -165,7 +186,7 @@ const BookList = () => {
 
       {hasBooks && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {books.map((book) => (
+          {paginatedBooks.map(book => (
             <BookCard key={book.id} book={book} />
           ))}
         </div>
@@ -174,7 +195,7 @@ const BookList = () => {
       {!loading && totalPages > 0 && (
         <div className="mt-8 flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="text-sm text-gray-600">
-            Hiển thị {books.length} / {totalElements} sản phẩm
+            Hiển thị {page * PAGE_SIZE + paginatedBooks.length} / {totalElements} sản phẩm
           </div>
 
           <div className="flex items-center gap-3">
