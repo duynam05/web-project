@@ -250,7 +250,7 @@ npm run build
 | 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sách: thêm, sửa, xóa, xem danh sách, xem chi tiết |[Book Management](https://github.com/duynam05/web-project/commit/04c1610c6200e23960a1615c87f023e20e6a81d8) |
 | 2026-04-16 | Trịnh Duy Nam | Tích hợp upload ảnh sách | Đang cập nhật |
 | 2026-04-16 | Phạm Thị Phượng | Xây dựng chức năng giỏ hàng: thêm sản phẩm, cập nhật số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng | [Cart Management](https://github.com/duynam05/web-project/blob/main/docs/Cart%20Management.md) |
-| 2026-04-18 | Phạm Thị Phượng | Xây dựng chức năng đặt hàng và xem danh sách đơn hàng của người dùng | Đang cập nhật |
+| 2026-04-18 | Phạm Thị Phượng | Xây dựng chức năng đặt hàng và xem danh sách đơn hàng của người dùng | [Order Management](https://github.com/duynam05/web-project/commit/2baf7df34216140cb13477bbf7b99299f2cecd31) |
 | 2026-04-18 | Trịnh Duy Nam | Hoàn thiện chức năng hồ sơ cá nhân và trang tài khoản người dùng | Đang cập nhật |
 | 2026-04-19 | Phạm Thị Phượng | Xây dựng giao diện người dùng gồm trang chủ, danh sách sách, chi tiết sách, giỏ hàng, đăng nhập, đăng ký | Đang cập nhật |
 | 2026-04-19 | Phạm Thị Phượng | Xây dựng chức năng checkout và luồng thanh toán giả lập VNPay | Đang cập nhật |
