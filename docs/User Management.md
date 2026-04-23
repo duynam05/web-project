@@ -1,87 +1,187 @@
 # Software Requirement Specification (SRS)
 
-## Chức năng: Quản lý thông tin tài khoản (User Profile Management)
+## Chức năng: Quản lý người dùng (User Management)
 
 **Mã chức năng:** USER-01  
-**Trạng thái:** In Progress  
-**Người soạn thảo:** Phạm Thị Phượng
+**Trạng thái:** Updated  
+**Người soạn thảo:** Phạm Thị Phượng  
 
 ---
 
-### 1. Mô tả tổng quan (Description)
-Chức năng cho phép người dùng (Khách hàng) xem và cập nhật thông tin cá nhân của mình. Hệ thống hỗ trợ cập nhật các thông tin cơ bản và ảnh đại diện (Avatar) để cá nhân hóa tài khoản.
+## 1. Mô tả tổng quan (Description)
+
+Chức năng cho phép quản trị viên (ADMIN) và người dùng (USER) quản lý thông tin tài khoản trong hệ thống.
+
+Hệ thống hỗ trợ:
+- Đăng ký tài khoản mới
+- Xem thông tin người dùng
+- Cập nhật thông tin cá nhân
+- Quản lý trạng thái tài khoản (ACTIVE/DISABLED)
+- Xóa người dùng (ADMIN)
+- Xem danh sách người dùng (ADMIN)
+
+Người dùng chỉ có thể thao tác trên chính tài khoản của mình, trong khi ADMIN có toàn quyền quản lý user.
 
 ---
 
-### 2. Luồng nghiệp vụ (User Workflow)
+## 2. Luồng nghiệp vụ (User Workflow)
+
+### 2.1 Luồng đăng ký và đăng nhập
 
 | Bước | Hành động người dùng | Phản hồi hệ thống |
 |------|----------------------|-------------------|
-| 1 | Truy cập trang `Tài Khoản Của Tôi` | Hiển thị form chứa dữ liệu hiện tại từ database |
-| 2 | Thay đổi thông tin cá nhân | Kiểm tra tính hợp lệ của dữ liệu (validation) |
-| 3 | Tải lên ảnh đại diện (tùy chọn) | Hiển thị preview ảnh ngay trên giao diện |
-| 4 | Nhấn nút "Lưu thay đổi" | Gửi request PUT/POST `/api/user/profile` |
-| 5 | Dữ liệu hợp lệ | Cập nhật DB, hiển thị toast thành công |
-| 6 | Dữ liệu trùng lặp (SĐT) | Hiển thị thông báo lỗi tại trường tương ứng |
+| 1 | Đăng ký tài khoản | `POST /auth/register` |
+| 2 | Nhập email + password | Hệ thống validate dữ liệu |
+| 3 | Tạo tài khoản thành công | Trả về `UserResponse` |
+| 4 | Đăng nhập | `POST /auth/token` |
+| 5 | Nhận JWT token | Trả về access token |
 
 ---
 
-### 3. Yêu cầu dữ liệu chi tiết (Detailed Data Requirements)
+### 2.2 Luồng người dùng (USER)
 
-#### 3.1 Input Validation
-- **Họ và tên:**
-  * Kiểu: String.
-  * Ràng buộc: Bắt buộc, tối đa 255 ký tự.
-- **Email:**
-  * Kiểu: String.
-  * Ràng buộc: Email phải đúng định dạng.
-- **Số điện thoại:**
-  * Kiểu: String.
-  * Ràng buộc: Bắt buộc, 10 ký tự số, phải là duy nhất (UNIQUE).
-- **Địa chỉ:**
-  * Kiểu: String/Text.
-  * Ràng buộc: **Không bắt buộc**
-- **Ảnh đại diện (Avatar):**
-  * Kiểu: File (Image).
-  * Ràng buộc: Không bắt buộc. Định dạng: `.jpg`, `.png`. Dung lượng < 2MB.
-
-#### 3.2 Database Logic (Table: users)
-- `full_name`: Ghi đè giá trị mới.
-- `phone_number`: Kiểm tra UNIQUE (không trùng với người dùng khác).
-- `address`: Lưu thông tin địa chỉ liên lạc/giao hàng.
-- `avatar_url`: Lưu đường dẫn file ảnh sau khi upload.
-- `updated_at`: Cập nhật timestamp hiện tại.
+| Bước | Hành động người dùng | Phản hồi hệ thống |
+|------|----------------------|-------------------|
+| 1 | Xem thông tin cá nhân | `GET /users/my-info` |
+| 2 | Cập nhật thông tin | `PUT /users/me` |
+| 3 | Thay đổi mật khẩu | `POST /auth/change-password` |
+| 4 | Hệ thống validate token | Kiểm tra JWT + trạng thái ACTIVE |
 
 ---
 
-### 4. Ràng buộc & Bảo mật (Constraints & Security)
+### 2.3 Luồng quản trị (ADMIN)
 
-- **Access Control:** Yêu cầu header `Authorization: Bearer <JWT_TOKEN>`. Người dùng chỉ được sửa thông tin của chính mình.
-- **File Security:** Backend thực hiện kiểm tra loại tệp (extension/MIME type) để tránh upload mã độc.
-- **Data Integrity:** Không cho phép để trống các trường bắt buộc đã quy định.
-
----
-
-### 5. Danh mục lỗi (Error Handling)
-
-| Mã lỗi | Trường hợp | Thông báo hiển thị |
-|--------|------------|--------------------|
-| ERR_02 | SĐT đã tồn tại | "Số điện thoại này đã được sử dụng." |
-| ERR_04 | Format Phone sai | "Số điện thoại phải có đúng 10 chữ số." |
-| ERR_06 | File quá lớn | "File ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB." |
-| ERR_07 | Định dạng file không hỗ trợ | "Chỉ chấp nhận ảnh định dạng PNG hoặc JPG!" |
+| Bước | Hành động ADMIN | Phản hồi hệ thống |
+|------|----------------|-------------------|
+| 1 | Xem danh sách user | `GET /users` |
+| 2 | Xem chi tiết user | `GET /users/{userId}` |
+| 3 | Cập nhật user | `PUT /users/{userId}` |
+| 4 | Thay đổi trạng thái | `PATCH /users/{userId}/status` |
+| 5 | Xóa user | `DELETE /users/{userId}` |
+| 6 | Tạo user hệ thống | `POST /users` |
 
 ---
 
-### 6. Giao diện (UI/UX Specification)
-- **Avatar:** Hiển thị trong khung tròn. Có icon hình camera đè ảnh cũ trong trường hợp người dùng hover vào avatar để thay đổi ảnh.
-- **Responsive:** Form phải hiển thị tốt trên cả giao diện mobile và desktop.
+## 3. Yêu cầu dữ liệu chi tiết (Detailed Data Requirements)
+
+### 3.1 Input Validation
+
+#### Full Name
+- Kiểu: String  
+- Bắt buộc  
+- Tối đa: 255 ký tự  
+
+#### Email
+- Kiểu: String  
+- Bắt buộc  
+- Định dạng email hợp lệ  
+- UNIQUE trong hệ thống  
+
+#### Password
+- Kiểu: String  
+- Bắt buộc khi đăng ký  
+- Được mã hóa (BCrypt)  
+
+#### Phone Number
+- Kiểu: String  
+- 10 chữ số  
+- UNIQUE  
+
+#### Status
+- Kiểu: Enum  
+- Giá trị: `ACTIVE`, `DISABLED`  
 
 ---
 
-### 7. API Reference (Dự kiến)
-- **Endpoint:** `PUT /api/users/profile`
-- **Content-Type:** `multipart/form-data` (để hỗ trợ gửi file ảnh).
+## 4. Database Logic (Table: users)
 
-### 8. Diagram Sequence
-<img width="507" height="594" alt="Screenshot 2026-04-03 at 12 01 07" src="https://github.com/user-attachments/assets/a6fea5cf-f656-4928-acfd-fea5732241e6" />
+- `id` (UUID) – khóa chính  
+- `email` – đăng nhập  
+- `password` – mật khẩu mã hóa  
+- `full_name` – tên người dùng  
+- `phone_number` – số điện thoại  
+- `status` – trạng thái tài khoản  
+- `roles` – danh sách quyền  
+- `created_at` – thời gian tạo  
+- `updated_at` – thời gian cập nhật  
+
+---
+
+## 5. API Reference (Updated theo backend)
+
+### 5.1 Auth APIs (Public)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|------|
+| POST | `/auth/register` | Đăng ký user |
+| POST | `/auth/token` | Đăng nhập |
+| POST | `/auth/introspect` | Kiểm tra token |
+| POST | `/auth/refresh` | Refresh token |
+| POST | `/auth/logout` | Đăng xuất |
+| POST | `/auth/change-password` | Đổi mật khẩu |
+
+---
+
+### 5.2 User APIs
+
+| Method | Endpoint | Quyền | Mô tả |
+|--------|----------|------|------|
+| GET | `/users` | ADMIN | Danh sách user |
+| GET | `/users/{userId}` | ADMIN | Chi tiết user |
+| GET | `/users/my-info` | USER | Thông tin cá nhân |
+| PUT | `/users/me` | USER | Cập nhật profile |
+| POST | `/users` | ADMIN | Tạo user |
+| PUT | `/users/{userId}` | ADMIN | Cập nhật user |
+| PATCH | `/users/{userId}/status` | ADMIN | Đổi trạng thái |
+| DELETE | `/users/{userId}` | ADMIN | Xóa user |
+
+---
+
+## 6. Ràng buộc & Bảo mật (Constraints & Security)
+
+### Authentication
+- Sử dụng JWT:
+```text
+Authorization: Bearer <JWT_TOKEN>
+Authorization
+Role	Quyền
+USER	Xem và cập nhật thông tin cá nhân
+ADMIN	Quản lý toàn bộ user
+SYSTEM	Seed dữ liệu ban đầu
+Business Rules
+User DISABLED không thể login hoặc refresh token
+Email là duy nhất
+Password phải được mã hóa
+USER chỉ được update profile của chính mình
+ADMIN có toàn quyền CRUD user
+## 7. Danh mục lỗi (Error Handling)
+Mã lỗi	Trường hợp	Thông báo
+AUTH_01	Token không hợp lệ	Unauthorized
+AUTH_02	User bị DISABLED	Account disabled
+USER_01	Email đã tồn tại	Email already exists
+USER_02	Không tìm thấy user	User not found
+USER_03	Sai mật khẩu	Invalid credentials
+USER_04	Không đủ quyền	Forbidden
+## 8. Giao diện (UI/UX Specification)
+### 8.1 Trang Profile (User)
+Xem thông tin cá nhân
+Cập nhật full name, phone, address
+Đổi mật khẩu
+8.2 Trang Admin User Management
+Danh sách user (table)
+Filter theo status
+Action:
+View detail
+Update
+Delete
+Change status
+## 9. Sequence Flow 
+### 9.1 Đăng ký user
+Client → POST /auth/register → AuthenticationService → DB → Response
+### 9.2 Đăng nhập
+Client → POST /auth/token → AuthenticationService → JWT → Response
+### 9.3 Cập nhật profile
+Client → PUT /users/me → Security Filter → UserService → DB → Response
+### 9.4 Admin update status
+Client → PATCH /users/{id}/status → Security (ADMIN)
+→ UserService → DB → Response
