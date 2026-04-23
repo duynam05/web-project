@@ -9,15 +9,24 @@ import { useCartActions, useCartState } from '../contexts/CartContext';
 const Cart = () => {
   const { user } = useAuth();
   const { cart } = useCartState();
+
+  const items = cart?.items || [];
+  
   const { fetchCart, removeFromCartSuccess, updateCartSuccess } = useCartActions();
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
+  // useEffect(() => {
+  //   if (token) fetchCart();
+  // }, [token]);
+
   useEffect(() => {
-    if (token) fetchCart();
-  }, [token]);
+    if (user && token) {
+      fetchCart();
+    }
+  }, [user, token]);
 
   const removeFromCart = async (id) => {
     const currentToken = localStorage.getItem("token");
@@ -33,7 +42,7 @@ const Cart = () => {
 
   const updateQuantity = async (id, change) => {
     const currentToken = localStorage.getItem("token");
-    const item = cart.items.find((i) => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (!item) {
       return;
     }
@@ -79,7 +88,7 @@ const Cart = () => {
     );
   }
 
-  if (!cart.items || cart.items.length === 0) {
+  if (!items || items.length === 0) {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Giỏ hàng trống</h2>
@@ -109,12 +118,12 @@ const Cart = () => {
         <div className="flex items-center gap-2 mb-2">
           <input
             type="checkbox"
-            checked={selectedItems.length === cart.items.length}
+            checked={selectedItems.length === items.length}
             onChange={() => {
-              if (selectedItems.length === cart.items.length) {
+              if (selectedItems.length === items.length) {
                 setSelectedItems([]);
               } else {
-                setSelectedItems(cart.items.map(i => i.id));
+                setSelectedItems(items.map(i => i.id));
               }
             }}
           />
@@ -122,7 +131,7 @@ const Cart = () => {
         </div>
 
 
-         {cart.items.map((item) => (
+         {items.map((item) => (
             <div key={item.id} className="flex gap-4 bg-white p-4 rounded-lg shadow-sm items-center">
 
               {/* CHECKBOX */}
@@ -184,7 +193,7 @@ const Cart = () => {
           <button
             disabled={selectedItems.length === 0}
             onClick={() => {
-              const selected = cart.items.filter(i =>
+              const selected = items.filter(i =>
                 selectedItems.includes(i.id)
               );
             

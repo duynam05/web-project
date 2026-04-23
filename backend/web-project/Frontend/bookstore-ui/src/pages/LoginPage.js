@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
@@ -10,47 +10,40 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
   const { login } = useAuth();
   const navigate = useNavigate();
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    try {
-      const res = await fetch(buildApiUrl('/auth/token'), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      const token = data.result?.token;
-
-      if (!token) {
-        setError("Sai tài khoản hoặc mật khẩu");
-        return;
-      }
-
-      localStorage.setItem("token", token);
-
-      const decoded = jwtDecode(token);
-      const role = decoded.scope?.includes("ADMIN") ? "ADMIN" : "USER";
-      const user = {
-        email: decoded.sub,
-        fullName: decoded.sub,
-        role,
-      };
-
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      login(user);
-      navigate("/");
-    } catch (err) {
-      console.error(err);
-      setError("Lỗi server");
+  
+    const res = await fetch(buildApiUrl('/auth/token'), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+  
+    const data = await res.json();
+    const token = data.result?.token;
+  
+    if (!token) {
+      setError("Sai tài khoản hoặc mật khẩu");
+      return;
     }
+  
+    const decoded = jwtDecode(token);
+  
+    const user = {
+      email: decoded.sub,
+      fullName: decoded.sub,
+      role: decoded.scope
+    };
+  
+    login(user, token);
+    navigate(from);
   };
 
   return (

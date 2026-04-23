@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, BookOpen, LogIn, Search } from 'lucide-react';
+import { ShoppingCart, BookOpen, LogIn, Search, Package } from 'lucide-react';
 
 import Home from './pages/Home';
 import BookList from './pages/BookList';
@@ -21,6 +21,9 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CheckoutPage from './pages/CheckoutPage';
 import VNPayGateway from './pages/VNPayGateway';
+import PrivateRoute from './components/PrivateRoute';
+import OrderListPage from './pages/OrderListPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 
 const Navbar = () => {
   const { cartItemCount } = useCartState();
@@ -88,6 +91,11 @@ const Navbar = () => {
           <Link to="/" className="hover:text-blue-600">Trang chủ</Link>
           <Link to="/books" className="hover:text-blue-600">Sách</Link>
 
+          <Link to="/account/orders" className="flex items-center gap-1 hover:text-blue-600">
+            <Package size={20} />
+            <span>Đơn hàng</span>
+          </Link>
+
           <Link to="/cart" className="relative p-2 hover:text-blue-600">
             <ShoppingCart size={24} />
             {cartItemCount > 0 && (
@@ -130,7 +138,7 @@ function App() {
             <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 font-sans">
               <Navbar />
               <main className="flex-grow">
-                <Routes>
+                {/* <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/books" element={<BookList />} />
                   <Route path="/book/:id" element={<BookDetail />} />
@@ -140,7 +148,72 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/vnpay-gateway" element={<VNPayGateway />} />
+                </Routes> */}
+                <Routes>
+                  {/* PUBLIC */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/books" element={<BookList />} />
+                  <Route path="/book/:id" element={<BookDetail />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+
+                  {/* PROTECTED */}
+                  <Route
+                    path="/cart"
+                    element={
+                      <PrivateRoute>
+                        <Cart />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/account"
+                    element={
+                      <PrivateRoute>
+                        <AccountPage />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/checkout"
+                    element={
+                      <PrivateRoute>
+                        <CheckoutPage />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/vnpay-gateway"
+                    element={
+                      <PrivateRoute>
+                        <VNPayGateway />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/account/orders"
+                    element={
+                      <PrivateRoute>
+                        <OrderListPage />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/account/orders/:orderId"
+                    element={
+                      <PrivateRoute>
+                        <OrderDetailPage />
+                      </PrivateRoute>
+                    }
+                  />
+
                 </Routes>
+
               </main>
 
               <ToastContainer

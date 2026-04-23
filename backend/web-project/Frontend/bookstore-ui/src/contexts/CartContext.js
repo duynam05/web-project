@@ -3,7 +3,8 @@ import React, {
   useCallback,
   useContext,
   useMemo,
-  useState
+  useState,
+  useEffect
 } from 'react';
 import { buildApiUrl } from '../config/api';
 import { toast } from 'react-toastify';
@@ -19,29 +20,86 @@ export const CartProvider = ({ children }) => {
     totalPrice: 0
   });
 
-  // BADGE = số loại sản phẩm
-  // const cartItemCount = cart?.items?.length || 0;
+  const resetCart = () => {
+    setCart({
+      items: [],
+      totalItems: 0,
+      totalQuantity: 0,
+      totalPrice: 0
+    });
+  };
+
+  useEffect(() => {
+    const handleLogout = () => {
+      resetCart();
+    };
+  
+    window.addEventListener("logout", handleLogout);
+  
+    return () => {
+      window.removeEventListener("logout", handleLogout);
+    };
+  }, []);
+
   const cartItemCount =
     cart?.items?.reduce((sum, i) => sum + i.quantity, 0) || 0;
 
-  const fetchCart = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch(buildApiUrl('/cart'), {
-        headers: {
-          Authorization: `Bearer ${token}`
+    const fetchCart = useCallback(async () => {
+      try {
+        const token = localStorage.getItem("token");
+    
+        if (!token) {
+          setCart({
+            items: [],
+            totalItems: 0,
+            totalQuantity: 0,
+            totalPrice: 0
+          });
+          return;
         }
-      });
-
-      const data = await res.json();
-      setCart(data.result);
-    } catch (err) {
-      console.error(err);
-      toast.error("Không thể tải giỏ hàng");
-    }
-  }, []);
+    
+        const res = await fetch(buildApiUrl('/cart'), {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+    
+        if (res.status === 401) {
+          console.warn("Unauthorized cart");
+          setCart({
+            items: [],
+            totalItems: 0,
+            totalQuantity: 0,
+            totalPrice: 0
+          });
+          return;
+        }
+    
+        const data = await res.json();
+    
+        if (!res.ok) {
+          throw new Error(data?.message || "Load cart failed");
+        }
+    
+        setCart(data.result || {
+          items: [],
+          totalItems: 0,
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+    
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải giỏ hàng");
+    
+        setCart({
+          items: [],
+          totalItems: 0,
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+      }
+    }, []);
 
   // wrapper actions để show toast UI đồng nhất
   const addToCartSuccess = useCallback((msg = "Đã thêm vào giỏ hàng") => {
@@ -64,6 +122,7 @@ export const CartProvider = ({ children }) => {
   const actionsValue = useMemo(() => ({
     setCart,
     fetchCart,
+    resetCart,
     addToCartSuccess,
     removeFromCartSuccess,
     updateCartSuccess

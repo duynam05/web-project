@@ -11,7 +11,7 @@ const CheckoutPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const displayName = user?.fullName || user?.name || '';
+  const displayName = user?.fullName || user?.name || user?.email || '';
   const displayEmail = user?.email || '';
   const [form, setForm] = useState({
     name: displayName,
@@ -21,16 +21,64 @@ const CheckoutPage = () => {
     paymentMethod: 'COD'
   });
 
+  useEffect(() => {
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        name: user.fullName || user.email || '',
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
+
   const items = state?.items || [];
-  const totalPrice = state?.totalPrice || 0;
+
   const total = items.reduce(
     (sum, i) => sum + (i.unitPrice || 0) * i.quantity,
     0
   );
 
-  const [step, setStep] = useState(1);
+  // const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const validateField = (name, value) => {
+    let message = "";
+  
+    switch (name) {
+      case "name":
+        if (!value.trim()) message = "Tên không được để trống";
+        break;
+  
+      case "email":
+        if (!value.trim()) message = "Email không được để trống";
+        else if (!EMAIL_REGEX.test(value)) message = "Email không hợp lệ";
+        break;
+  
+      case "phone":
+        if (!value.trim()) message = "SĐT không được để trống";
+        else if (!PHONE_REGEX.test(value))
+          message = "SĐT phải 10 số và bắt đầu bằng 0";
+        break;
+  
+      case "address":
+        if (!value.trim()) message = "Địa chỉ không được để trống";
+        break;
+  
+      default:
+        break;
+    }
+  
+    setErrors(prev => {
+      if (!message) {
+        const { [name]: removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [name]: message };
+    });
+  
+    return message === "";
+  };
 
   // VN address API
   const [suggestions, setSuggestions] = useState([]);
@@ -62,7 +110,6 @@ const CheckoutPage = () => {
   };
 
   const validateStep1 = () => {
-    if (user) return true;
 
     const err = {};
   
@@ -93,7 +140,6 @@ const CheckoutPage = () => {
       setLoading(true);
   
       const token = localStorage.getItem("token");
-  
       const res = await fetch(buildApiUrl('/api/orders'), {
         method: 'POST',
         headers: {
@@ -126,15 +172,39 @@ const CheckoutPage = () => {
     const order = await createOrder();
     if (!order) return;
   
-    if (form.paymentMethod === 'VNPay') {
-      navigate('/vnpay-gateway', {
-        state: { orderId: order.orderId }
-      });
+    // COD flow
+    if (form.paymentMethod === 'COD') {
+      toast.success("Đặt hàng thành công");
+      navigate('/account');
       return;
     }
   
-    toast.success("Đặt hàng thành công");
-    navigate('/account');
+    // VNPay flow
+    try {
+      const token = localStorage.getItem("token");
+  
+      const res = await fetch(
+        buildApiUrl(`/api/orders/${order.orderId}/payment`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        }
+      );
+  
+      const data = await res.json();
+  
+      if (!res.ok) throw new Error(data?.message || "Thanh toán thất bại");
+  
+      toast.success("Thanh toán thành công");
+  
+      navigate('/account');
+  
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   if (!items.length) {
@@ -160,7 +230,15 @@ const CheckoutPage = () => {
           <div className="space-y-2">
             <input
               value={form.name}
-              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+
+              onChange={(e) => {
+                const value = e.target.value;
+                setForm(prev => ({ ...prev, name: value }));
+                validateField("name", value);
+              }}
+
+              onBlur={(e) => validateField("name", e.target.value)}
+
               placeholder="Họ tên"
               className={`w-full border p-2 rounded ${errors.name ? 'border-red-500' : ''}`}
             />
@@ -168,7 +246,15 @@ const CheckoutPage = () => {
   
             <input
               value={form.email}
-              onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
+              
+              onChange={(e) => {
+                const value = e.target.value;
+                setForm(prev => ({ ...prev, email: value }));
+                validateField("email", value);
+              }}
+
+              onBlur={(e) => validateField("email", e.target.value)}
+
               placeholder="Email"
               className={`w-full border p-2 rounded ${errors.email ? 'border-red-500' : ''}`}
             />
@@ -182,8 +268,16 @@ const CheckoutPage = () => {
         <label className="font-semibold">Số điện thoại</label>
         <input
           value={form.phone}
-          onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))}
-          placeholder="0xxxxxxxxx"
+          
+          onChange={(e) => {
+            const value = e.target.value;
+            setForm(prev => ({ ...prev, phone: value }));
+            validateField("phone", value);
+          }}
+
+          onBlur={(e) => validateField("phone", e.target.value)}
+
+          placeholder="Nhập số điện thoại"
           className={`w-full mt-2 border p-2 rounded ${errors.phone ? 'border-red-500' : ''}`}
         />
         {errors.phone && (
@@ -196,7 +290,15 @@ const CheckoutPage = () => {
         <label className="font-semibold">Địa chỉ giao hàng</label>
         <input
           value={form.address}
-          onChange={(e) => searchAddress(e.target.value)}
+          
+          onChange={(e) => {
+            const value = e.target.value;
+            searchAddress(value);
+            validateField("address", value);
+          }}
+
+          onBlur={(e) => validateField("address", e.target.value)}
+
           placeholder="Nhập địa chỉ..."
           className={`w-full mt-2 border p-2 rounded ${errors.address ? 'border-red-500' : ''}`}
         />
@@ -217,14 +319,6 @@ const CheckoutPage = () => {
                 ))}
             </div>
         )}
-      </div>
-  
-      {/* GOOGLE MAP SUGGEST (placeholder UI) */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="font-semibold mb-2">Gợi ý địa chỉ (VN)</h2>
-        <p className="text-xs text-gray-500">
-          (Tích hợp API gợi ý địa chỉ Việt Nam sẽ hiển thị tại đây)
-        </p>
       </div>
   
       {/* ITEMS */}
@@ -254,7 +348,7 @@ const CheckoutPage = () => {
             className="w-full border p-2 rounded"
             >
             <option value="COD">Thanh toán khi nhận hàng (COD)</option>
-            <option value="ONLINE">VNPay (Fake Gateway)</option>
+            <option value="ONLINE">VNPay</option>
         </select>
       </div>
   

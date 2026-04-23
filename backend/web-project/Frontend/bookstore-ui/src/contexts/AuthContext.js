@@ -1,41 +1,73 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { buildApiUrl } from '../config/api';
 
 const AuthContext = createContext();
 const USER_STORAGE_KEY = 'currentUser';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setTokenState] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+  const setToken = (t) => {
+    setTokenState(t);
 
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+    if (t) localStorage.setItem("token", t);
+    else localStorage.removeItem("token");
+  };
+
+  const login = (userData, token) => {
+    setUser(userData);
+    setToken(token);
+
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+  };
+
+  const fetchMe = async (token) => {
+    try {
+      const res = await fetch(buildApiUrl('/users/my-info'), {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      console.log("MY INFO:", data);
+
+      if (res.ok) {
+        setUser(data.result);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.result));
+      } else {
+        console.warn("Invalid token → logout");
+        logout();
       }
     } catch (err) {
-      console.error("Parse user lỗi:", err);
-      localStorage.removeItem(USER_STORAGE_KEY);
+      console.error("fetchMe error:", err);
+      logout();
     } finally {
-      setLoading(false); // QUAN TRỌNG NHẤT
+      setLoading(false);
     }
-  }, []);
-
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem(USER_STORAGE_KEY);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+
+    window.dispatchEvent(new Event("logout"));
   };
 
+  useEffect(() => {
+    if (token) {
+      fetchMe(token);
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
