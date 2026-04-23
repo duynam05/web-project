@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, BookOpen, LogIn, Search } from 'lucide-react';
+import { ShoppingCart, BookOpen, LogIn, Search, Package } from 'lucide-react';
 
 import Home from './pages/Home';
 import BookList from './pages/BookList';
@@ -11,6 +11,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CheckoutPage from './pages/CheckoutPage';
 import VNPayGateway from './pages/VNPayGateway';
+import OrderListPage from './pages/OrderListPage';
+import OrderDetailPage from './pages/OrderDetailPage';
+import PrivateRoute from './components/PrivateRoute';
 import { CartProvider, useCart } from './contexts/CartContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -44,9 +47,11 @@ const Navbar = () => {
       params.set('q', keyword);
     }
 
+    params.set('page', '0');
+
     navigate({
       pathname: '/books',
-      search: params.toString() ? `?${params.toString()}` : ''
+      search: params.toString() ? `?${params.toString()}` : '',
     });
   };
 
@@ -59,7 +64,7 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center gap-4 lg:hidden">
-            <Link to="/books" className="hover:text-blue-600">Sách</Link>
+            <Link to="/books" className="hover:text-blue-600">Sach</Link>
             <Link to="/cart" className="relative p-2 hover:text-blue-600">
               <ShoppingCart size={24} />
               {totalItems > 0 && (
@@ -75,7 +80,7 @@ const Navbar = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             className="w-full rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-24 outline-none transition focus:border-blue-400 focus:bg-white"
-            placeholder="Tìm sách theo tên hoặc tác giả..."
+            placeholder="Tim sach theo ten hoac tac gia..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -83,13 +88,17 @@ const Navbar = () => {
             type="submit"
             className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-blue-600 px-4 py-1.5 text-sm text-white transition hover:bg-blue-700"
           >
-            Tìm
+            Tim
           </button>
         </form>
 
         <div className="hidden items-center gap-6 font-medium lg:flex">
-          <Link to="/" className="hover:text-blue-600">Trang chủ</Link>
-          <Link to="/books" className="hover:text-blue-600">Sách</Link>
+          <Link to="/" className="hover:text-blue-600">Trang chu</Link>
+          <Link to="/books" className="hover:text-blue-600">Sach</Link>
+          <Link to="/account/orders" className="flex items-center gap-1 hover:text-blue-600">
+            <Package size={20} />
+            <span>Don hang</span>
+          </Link>
 
           <Link to="/cart" className="relative p-2 hover:text-blue-600">
             <ShoppingCart size={24} />
@@ -115,7 +124,7 @@ const Navbar = () => {
             </Link>
           ) : (
             <Link to="/login" className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700">
-              <LogIn size={18} /> Đăng nhập
+              <LogIn size={18} /> Dang nhap
             </Link>
           )}
         </div>
@@ -137,12 +146,56 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/books" element={<BookList />} />
                   <Route path="/book/:id" element={<BookDetail />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/account" element={<AccountPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/vnpay-gateway" element={<VNPayGateway />} />
+                  <Route
+                    path="/cart"
+                    element={
+                      <PrivateRoute>
+                        <Cart />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/account"
+                    element={
+                      <PrivateRoute>
+                        <AccountPage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/checkout"
+                    element={
+                      <PrivateRoute>
+                        <CheckoutPage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/vnpay-gateway"
+                    element={
+                      <PrivateRoute>
+                        <VNPayGateway />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/account/orders"
+                    element={
+                      <PrivateRoute>
+                        <OrderListPage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/account/orders/:orderId"
+                    element={
+                      <PrivateRoute>
+                        <OrderDetailPage />
+                      </PrivateRoute>
+                    }
+                  />
                 </Routes>
               </main>
               <footer className="mt-auto bg-gray-800 py-8 text-center text-white">
