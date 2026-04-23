@@ -19,7 +19,11 @@ public class CorsConfig {
                 "http://localhost:3001",
                 "http://localhost:5173",
                 "http://localhost:8081",
-                "http://127.0.0.1:8081"
+                "http://127.0.0.1:8081",
+                "http://10.0.37.96:8080",
+                "http://localhost:8080",
+                "http://127.0.0.1:8080",
+                "http://localhost:8082"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
