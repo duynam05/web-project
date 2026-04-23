@@ -4,7 +4,7 @@
 
 **Mã chức năng:** USER-01  
 **Trạng thái:** In Progress  
-**Người soạn thảo:** Phạm Thị Phương
+**Người soạn thảo:** Phạm Thị Phượng
 
 ---
 
