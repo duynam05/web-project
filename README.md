@@ -15,6 +15,7 @@ Hệ thống hỗ trợ các chức năng chính như đăng ký, đăng nhập,
 | Thành viên | Mã sinh viên |
 | --- | --- |
 | Trịnh Duy Nam | 23810310255 |
+| Phạm Thị Phượng | 23810310265 |
 
 ## Công nghệ sử dụng
 
