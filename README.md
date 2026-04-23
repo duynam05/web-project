@@ -247,7 +247,7 @@ npm run build
 | 2026-03-22 | Trịnh Duy Nam | Xây dựng chức năng xác thực bằng JWT, refresh token và đăng xuất | [SRS Login](./docs/SRS_LOGIN.md) |
 | 2026-03-24 | Trịnh Duy Nam | Xây dựng chức năng đổi mật khẩu, lấy thông tin cá nhân và cập nhật hồ sơ người dùng | Đang cập nhật |
 | 2026-03-27 | Trịnh Duy Nam | Xây dựng chức năng phân quyền với user, role, permission | [User Management](./docs/User%20Management.md) |
-| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sách: thêm, sửa, xóa, xem danh sách, xem chi tiết | [Đang cập nhật](https://github.com/duynam05/web-project/commit/04c1610c6200e23960a1615c87f023e20e6a81d8) |
+| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sách: thêm, sửa, xóa, xem danh sách, xem chi tiết |(Book Management)(https://github.com/duynam05/web-project/commit/04c1610c6200e23960a1615c87f023e20e6a81d8) |
 | 2026-04-16 | Trịnh Duy Nam | Tích hợp upload ảnh sách | Đang cập nhật |
 | 2026-04-16 | Phạm Thị Phượng | Xây dựng chức năng giỏ hàng: thêm sản phẩm, cập nhật số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng | Đang cập nhật |
 | 2026-04-18 | Phạm Thị Phượng | Xây dựng chức năng đặt hàng và xem danh sách đơn hàng của người dùng | Đang cập nhật |
