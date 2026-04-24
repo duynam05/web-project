@@ -3,6 +3,10 @@ export const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8080";
 
+export const ADMIN_APP_URL =
+  process.env.REACT_APP_ADMIN_APP_URL ||
+  "http://localhost:5173";
+
 export const DEFAULT_AVATAR_URL = "/default-avatar.svg";
 
 export const buildApiUrl = (path) => `${API_BASE_URL}${path}`;

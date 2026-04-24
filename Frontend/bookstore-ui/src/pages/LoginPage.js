@@ -1,49 +1,73 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn } from 'lucide-react';
-import { jwtDecode } from "jwt-decode";
-import { buildApiUrl } from '../config/api';
+import { ADMIN_APP_URL, buildApiUrl } from '../config/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || '/';
 
   const { login } = useAuth();
   const navigate = useNavigate();
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    const res = await fetch(buildApiUrl('/auth/token'), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-  
-    const data = await res.json();
-    const token = data.result?.token;
-  
-    if (!token) {
-      setError("Sai tài khoản hoặc mật khẩu");
-      return;
+    setError('');
+
+    try {
+      const res = await fetch(buildApiUrl('/auth/token'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      const token = data.result?.token;
+
+      if (!token) {
+        setError('Sai tài khoản hoặc mật khẩu');
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+
+      const profileRes = await fetch(buildApiUrl('/users/my-info'), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const profileData = await profileRes.json();
+      const profile = profileData.result;
+      const roles = profile?.roles || [];
+      const isAdmin = roles.some((role) => role.name === 'ADMIN');
+
+      const user = {
+        email: profile?.email || decoded.sub,
+        fullName: profile?.fullName || decoded.sub,
+        roles,
+        role: roles.map((role) => role.name).join(', ') || decoded.scope,
+      };
+
+      login(user, token);
+
+      if (isAdmin) {
+        window.location.href = `${ADMIN_APP_URL}?token=${encodeURIComponent(token)}`;
+        return;
+      }
+
+      navigate(from);
+    } catch (err) {
+      setError('Không thể đăng nhập. Vui lòng thử lại.');
     }
-  
-    const decoded = jwtDecode(token);
-  
-    const user = {
-      email: decoded.sub,
-      fullName: decoded.sub,
-      role: decoded.scope
-    };
-  
-    login(user, token);
-    navigate(from);
   };
 
   return (
@@ -79,14 +103,24 @@ const LoginPage = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Mật khẩu
             </label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="w-full rounded-lg border px-4 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 transition hover:text-gray-700"
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button

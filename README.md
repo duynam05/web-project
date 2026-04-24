@@ -241,21 +241,21 @@ npm run build
 
 | Ngày | Thành viên | Công việc đã làm | Link SRS |
 | --- | --- | --- | --- |
-| 2026-03-20 | Trịnh Duy Nam | Khởi tạo project, thiết kế giao diện cơ bản | Chưa có |
-| 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng nhập | [SRS Login](./docs/SRS_LOGIN.md) |
-| 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng ký | [SRS Register](./docs/SRS_Register.md) |
-| 2026-03-22 | Trịnh Duy Nam | Xây dựng chức năng xác thực bằng JWT, refresh token và đăng xuất | [SRS Login](./docs/SRS_LOGIN.md) |
-| 2026-03-24 | Trịnh Duy Nam | Xây dựng chức năng đổi mật khẩu, lấy thông tin cá nhân và cập nhật hồ sơ người dùng | Đang cập nhật |
-| 2026-03-27 | Trịnh Duy Nam | Xây dựng chức năng phân quyền với user, role, permission | [User Management](./docs/User%20Management.md) |
-| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sách: thêm, sửa, xóa, xem danh sách, xem chi tiết | Đang cập nhật |
-| 2026-04-16 | Trịnh Duy Nam | Tích hợp upload ảnh sách | Đang cập nhật |
-| 2026-04-16 | Phạm Thị Phượng | Xây dựng chức năng giỏ hàng: thêm sản phẩm, cập nhật số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng | Đang cập nhật |
-| 2026-04-18 | Phạm Thị Phượng | Xây dựng chức năng đặt hàng và xem danh sách đơn hàng của người dùng | Đang cập nhật |
-| 2026-04-18 | Trịnh Duy Nam | Hoàn thiện chức năng hồ sơ cá nhân và trang tài khoản người dùng | Đang cập nhật |
-| 2026-04-19 | Phạm Thị Phượng | Xây dựng giao diện người dùng gồm trang chủ, danh sách sách, chi tiết sách, giỏ hàng, đăng nhập, đăng ký | Đang cập nhật |
-| 2026-04-19 | Phạm Thị Phượng | Xây dựng chức năng checkout và luồng thanh toán giả lập VNPay | Đang cập nhật |
-| 2026-04-21 | Trịnh Duy Nam | Xây dựng giao diện quản trị: dashboard, quản lý người dùng, quản lý sách, quản lý đơn hàng | Đang cập nhật |
-| 2026-04-21 | Trịnh Duy Nam | Xây dựng chức năng admin cập nhật trạng thái đơn hàng và kiểm tra quyền ADMIN | [Báo cáo 2026-04-08](./reports/REPORT_20260408.md) |
+| 2026-03-20 | Trịnh Duy Nam | Khởi tạo project, thiết kế giao diện cơ bản | [SRS Project Init](./docs/SRS_PROJECT_INIT_BASIC_UI.md) |
+| 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng nhập | [SRS Auth Login](./docs/SRS_AUTH_LOGIN.md) |
+| 2026-03-21 | Trịnh Duy Nam | Xây dựng chức năng đăng ký | [SRS Auth Register](./docs/SRS_AUTH_REGISTER.md) |
+| 2026-03-22 | Trịnh Duy Nam | Xây dựng chức năng xác thực bằng JWT, refresh token và đăng xuất | [SRS Auth Session](./docs/SRS_AUTH_SESSION.md) |
+| 2026-03-24 | Trịnh Duy Nam | Xây dựng chức năng đổi mật khẩu, lấy thông tin cá nhân và cập nhật hồ sơ người dùng | [SRS Account Profile](./docs/SRS_ACCOUNT_PROFILE.md) |
+| 2026-03-27 | Trịnh Duy Nam | Xây dựng chức năng phân quyền với user, role, permission | [SRS Role Permission Management](./docs/SRS_ROLE_PERMISSION_MANAGEMENT.md) |
+| 2026-03-29 | Phạm Thị Phượng | Xây dựng chức năng quản lý sách: thêm, sửa, xóa, xem danh sách, xem chi tiết | [SRS Book Management](./docs/SRS_BOOK_MANAGEMENT.md) |
+| 2026-04-16 | Trịnh Duy Nam | Tích hợp upload ảnh sách | [SRS Book Image Upload](./docs/SRS_BOOK_IMAGE_UPLOAD.md) |
+| 2026-04-16 | Phạm Thị Phượng | Xây dựng chức năng giỏ hàng: thêm sản phẩm, cập nhật số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng | [SRS Cart Management](./docs/SRS_CART_MANAGEMENT.md) |
+| 2026-04-18 | Phạm Thị Phượng | Xây dựng chức năng đặt hàng và xem danh sách đơn hàng của người dùng | [SRS Order Management](./docs/SRS_ORDER_MANAGEMENT.md) |
+| 2026-04-18 | Trịnh Duy Nam | Hoàn thiện chức năng hồ sơ cá nhân và trang tài khoản người dùng | [SRS Account Profile](./docs/SRS_ACCOUNT_PROFILE.md) |
+| 2026-04-19 | Phạm Thị Phượng | Xây dựng giao diện người dùng gồm trang chủ, danh sách sách, chi tiết sách, giỏ hàng, đăng nhập, đăng ký | [SRS User Interface](./docs/SRS_USER_INTERFACE.md) |
+| 2026-04-19 | Phạm Thị Phượng | Xây dựng chức năng checkout và luồng thanh toán giả lập VNPay | [SRS Checkout VNPay](./docs/SRS_CHECKOUT_VNPAY.md) |
+| 2026-04-21 | Trịnh Duy Nam | Xây dựng giao diện quản trị: dashboard, quản lý người dùng, quản lý sách, quản lý đơn hàng | [SRS Admin Dashboard](./docs/SRS_ADMIN_DASHBOARD.md) |
+| 2026-04-21 | Trịnh Duy Nam | Xây dựng chức năng admin cập nhật trạng thái đơn hàng và kiểm tra quyền ADMIN | [SRS Order Management](./docs/SRS_ORDER_MANAGEMENT.md) |
 
 
 ## Ghi chú

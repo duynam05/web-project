@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
+
+const PAGE_SIZE = 8;
 
 function initialsOf(value = '') {
   return value
@@ -23,10 +25,53 @@ function userStatusMeta(status) {
   return { label: 'Hoạt động', wrap: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500' };
 }
 
-export function UsersPhase1({ users, loading, error, busyUserId, onCreate, onEdit, onToggleStatus, onDelete }) {
+function buildPageNumbers(currentPage, totalPages) {
+  const start = Math.max(currentPage - 2, 0);
+  const end = Math.min(start + 5, totalPages);
+  return Array.from({ length: Math.max(end - start, 0) }, (_, index) => start + index);
+}
+
+export function UsersPhase1({
+  users,
+  loading,
+  error,
+  busyUserId,
+  roleOptions,
+  selectedRole,
+  selectedStatus,
+  onCreate,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+  onRoleChange,
+  onStatusChange,
+  onRefresh,
+}) {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [users.length, selectedRole, selectedStatus]);
+
   const activeCount = users.filter((user) => user.status === 'ACTIVE').length;
   const adminCount = users.filter((user) => user.roles?.some((role) => role.name === 'ADMIN')).length;
   const disabledCount = users.filter((user) => user.status === 'DISABLED').length;
+
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
+
+  const paginatedUsers = useMemo(
+    () => users.slice(safeCurrentPage * PAGE_SIZE, (safeCurrentPage + 1) * PAGE_SIZE),
+    [users, safeCurrentPage],
+  );
+
+  const pageNumbers = useMemo(
+    () => buildPageNumbers(safeCurrentPage, totalPages),
+    [safeCurrentPage, totalPages],
+  );
+
+  const startIndex = users.length ? safeCurrentPage * PAGE_SIZE + 1 : 0;
+  const endIndex = Math.min((safeCurrentPage + 1) * PAGE_SIZE, users.length);
 
   return (
     <main className="ml-64 min-h-screen bg-white">
@@ -59,13 +104,42 @@ export function UsersPhase1({ users, loading, error, busyUserId, onCreate, onEdi
           ))}
         </div>
 
+        <section className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-500">
+            <MaterialIcon className="text-lg">filter_list</MaterialIcon>
+            Bộ lọc:
+          </div>
+          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+            <span>Vai trò</span>
+            <select className="border-none bg-transparent text-sm font-medium text-slate-900 focus:outline-none" value={selectedRole} onChange={(event) => onRoleChange(event.target.value)}>
+              <option value="all">Tất cả</option>
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+            <span>Trạng thái</span>
+            <select className="border-none bg-transparent text-sm font-medium text-slate-900 focus:outline-none" value={selectedStatus} onChange={(event) => onStatusChange(event.target.value)}>
+              <option value="all">Tất cả</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="DISABLED">Bị khóa</option>
+            </select>
+          </label>
+          <div className="flex-grow" />
+          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600" onClick={onRefresh} type="button">
+            <MaterialIcon className="text-lg">restart_alt</MaterialIcon>
+            {loading ? 'Đang tải...' : 'Làm mới'}
+          </button>
+        </section>
+
         {error ? <p className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p> : null}
 
         <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <div>
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Danh sách tài khoản</h3>
-              <p className="mt-1 text-sm text-slate-500">{loading ? 'Đang tải dữ liệu...' : `${users.length} tài khoản đang hiển thị`}</p>
+              <p className="mt-1 text-sm text-slate-500">{loading ? 'Đang tải dữ liệu...' : `Hiển thị ${startIndex} - ${endIndex} / ${users.length} tài khoản`}</p>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -78,7 +152,15 @@ export function UsersPhase1({ users, loading, error, busyUserId, onCreate, onEdi
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((user, index) => {
+                {!loading && paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-10 text-center text-sm text-slate-500" colSpan="5">
+                      Không tìm thấy người dùng phù hợp.
+                    </td>
+                  </tr>
+                ) : null}
+
+                {paginatedUsers.map((user, index) => {
                   const status = userStatusMeta(user.status);
                   const isBusy = busyUserId === user.id;
 
@@ -109,6 +191,29 @@ export function UsersPhase1({ users, loading, error, busyUserId, onCreate, onEdi
               </tbody>
             </table>
           </div>
+
+          {users.length > 0 ? (
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+              <p className="text-xs font-bold uppercase tracking-tighter text-slate-500">
+                Trang {safeCurrentPage + 1} / {totalPages}
+              </p>
+              <div className="flex items-center gap-1">
+                <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30" type="button" disabled={safeCurrentPage === 0} onClick={() => setCurrentPage((page) => Math.max(page - 1, 0))}>
+                  <MaterialIcon className="text-[20px]">chevron_left</MaterialIcon>
+                </button>
+
+                {pageNumbers.map((pageNumber) => (
+                  <button key={pageNumber} className={`flex h-8 w-8 items-center justify-center rounded text-xs font-bold ${pageNumber === safeCurrentPage ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white'}`} type="button" onClick={() => setCurrentPage(pageNumber)}>
+                    {pageNumber + 1}
+                  </button>
+                ))}
+
+                <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30 hover:bg-white" type="button" disabled={safeCurrentPage + 1 >= totalPages} onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages - 1))}>
+                  <MaterialIcon className="text-[20px]">chevron_right</MaterialIcon>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </main>
