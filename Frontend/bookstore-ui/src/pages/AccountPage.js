@@ -1,110 +1,109 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, LogOut, Edit2, MapPin, Phone } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Edit2, Eye, EyeOff, LogOut, MapPin, Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { buildApiUrl, resolveAvatarUrl, DEFAULT_AVATAR_URL } from '../config/api';
 import { toast } from 'react-toastify';
+
+import { useAuth } from '../contexts/AuthContext';
+import { buildApiUrl, DEFAULT_AVATAR_URL, resolveAvatarUrl } from '../config/api';
 
 const PHONE_REGEX = /^0\d{9}$/;
 
 const AccountPage = () => {
   const [errors, setErrors] = useState({});
   const inputRefs = {
-    currentPassword: React.useRef(null),
-    newPassword: React.useRef(null),
-    confirmPassword: React.useRef(null),
+    currentPassword: useRef(null),
+    newPassword: useRef(null),
+    confirmPassword: useRef(null),
   };
+
   const { user, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  const token = useMemo(() => localStorage.getItem("token"), []);
+  const token = useMemo(() => localStorage.getItem('token'), []);
 
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({ fullName: '', phone: '', address: '' });
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
-  const isPhoneInvalid = form.phone && !PHONE_REGEX.test(form.phone);
-
   const [pwd, setPwd] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
-  
   const [changingPwd, setChangingPwd] = useState(false);
   const [showPwdForm, setShowPwdForm] = useState(false);
+  const [showPwdFields, setShowPwdFields] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
+  const isPhoneInvalid = form.phone && !PHONE_REGEX.test(form.phone);
+
+  const togglePwdField = (field) => {
+    setShowPwdFields((current) => ({ ...current, [field]: !current[field] }));
+  };
 
   const validatePasswordForm = () => {
-    const newErrors = {};
-  
+    const nextErrors = {};
+
     if (!pwd.currentPassword) {
-      newErrors.currentPassword = "Không được để trống";
+      nextErrors.currentPassword = 'Không được để trống';
     }
-  
+
     if (!pwd.newPassword) {
-      newErrors.newPassword = "Không được để trống";
+      nextErrors.newPassword = 'Không được để trống';
     } else if (pwd.newPassword.length < 6) {
-      newErrors.newPassword = "Phải >= 6 ký tự";
+      nextErrors.newPassword = 'Phải >= 6 ký tự';
     }
-  
+
     if (!pwd.confirmPassword) {
-      newErrors.confirmPassword = "Không được để trống";
+      nextErrors.confirmPassword = 'Không được để trống';
     } else if (pwd.confirmPassword !== pwd.newPassword) {
-      newErrors.confirmPassword = "Không khớp";
+      nextErrors.confirmPassword = 'Không khớp';
     }
-  
+
     if (pwd.newPassword === pwd.currentPassword) {
-      newErrors.newPassword = "Không được trùng mật khẩu cũ";
+      nextErrors.newPassword = 'Không được trùng mật khẩu cũ';
     }
-  
-    setErrors(newErrors);
-  
-    // focus vào field đầu tiên lỗi
-    const firstErrorField = Object.keys(newErrors)[0];
+
+    setErrors(nextErrors);
+
+    const firstErrorField = Object.keys(nextErrors)[0];
     if (firstErrorField && inputRefs[firstErrorField]?.current) {
       inputRefs[firstErrorField].current.focus();
     }
-  
-    return Object.keys(newErrors).length === 0;
-  };
 
+    return Object.keys(nextErrors).length === 0;
+  };
 
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
 
       const res = await fetch(buildApiUrl('/users/my-info'), {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.message || "Load thất bại");
+        throw new Error(data?.message || 'Load thất bại');
       }
 
       const userData = data.result;
-
       setProfile(userData);
-
-      // sync form với server
       setForm({
         fullName: userData.fullName || '',
         phone: userData.phone || '',
-        address: userData.address || ''
+        address: userData.address || '',
       });
-
     } catch (err) {
       toast.error(err.message);
     } finally {
       setLoading(false);
     }
   }, [token]);
-
 
   useEffect(() => {
     if (authLoading) return;
@@ -115,52 +114,49 @@ const AccountPage = () => {
     }
 
     fetchProfile();
-  }, [user, authLoading, fetchProfile]);
+  }, [user, authLoading, fetchProfile, navigate]);
 
   const handleSave = async (e) => {
     e.preventDefault();
-  
+
     if (!form.phone || form.phone.trim() === '') {
-      toast.error("Số điện thoại là bắt buộc");
+      toast.error('Số điện thoại là bắt buộc');
       return;
     }
-  
+
     if (!PHONE_REGEX.test(form.phone)) {
-      toast.error("SĐT phải 10 số và bắt đầu bằng 0");
+      toast.error('SĐT phải 10 số và bắt đầu bằng 0');
       return;
     }
-  
+
     try {
       setSaving(true);
-  
+
       const res = await fetch(buildApiUrl('/users/me'), {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
-  
+
       const data = await res.json();
-  
+
       if (!res.ok) {
-        throw new Error(data?.message || "Cập nhật thất bại");
+        throw new Error(data?.message || 'Cập nhật thất bại');
       }
-  
+
       const updated = data.result;
-  
       setProfile(updated);
       setForm({
         fullName: updated.fullName || '',
         phone: updated.phone || '',
-        address: updated.address || ''
+        address: updated.address || '',
       });
-  
       setIsEditing(false);
-  
-      toast.success("Cập nhật thành công");
-  
+
+      toast.success('Cập nhật thành công');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -170,60 +166,59 @@ const AccountPage = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-  
-    // validate trước
+
     if (!validatePasswordForm()) return;
-  
+
     try {
       setChangingPwd(true);
-  
+
       const res = await fetch(buildApiUrl('/auth/change-password'), {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           currentPassword: pwd.currentPassword,
-          newPassword: pwd.newPassword
-        })
+          newPassword: pwd.newPassword,
+        }),
       });
-  
+
       const data = await res.json().catch(() => null);
-  
+
       if (!res.ok) {
         const errorCode = data?.code;
-        const backendMsg = data?.message || "";
+        const backendMsg = data?.message || '';
 
-        // password sai
-        if (errorCode === 1023 || backendMsg.toLowerCase().includes("invalid current password")) {
-          setErrors({ currentPassword: "Mật khẩu hiện tại không đúng" });
+        if (errorCode === 1023 || backendMsg.toLowerCase().includes('invalid current password')) {
+          setErrors({ currentPassword: 'Mật khẩu hiện tại không đúng' });
           inputRefs.currentPassword.current?.focus();
           return;
         }
 
-        // token hết hạn
         if (res.status === 401) {
-          toast.error("Phiên đăng nhập hết hạn");
+          toast.error('Phiên đăng nhập hết hạn');
           return;
         }
-  
-        throw new Error(backendMsg || "Đổi mật khẩu thất bại");
+
+        throw new Error(backendMsg || 'Đổi mật khẩu thất bại');
       }
-  
-      toast.success("Đổi mật khẩu thành công");
-  
+
+      toast.success('Đổi mật khẩu thành công');
       setPwd({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
-  
       setErrors({});
       setShowPwdForm(false);
-  
+      setShowPwdFields({
+        currentPassword: false,
+        newPassword: false,
+        confirmPassword: false,
+      });
     } catch (err) {
-      toast.error(err.message || "Lỗi server");
+      toast.error(err.message || 'Lỗi server');
     } finally {
       setChangingPwd(false);
     }
@@ -232,7 +227,7 @@ const AccountPage = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
-    toast.info("Đã đăng xuất");
+    toast.info('Đã đăng xuất');
   };
 
   if (loading) {
@@ -251,23 +246,15 @@ const AccountPage = () => {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-xl mx-auto">
-
-        {/* HEADER */}
         <div className="flex items-center gap-3 mb-8">
           <User className="text-blue-600" size={28} />
-          <h1 className="text-3xl font-bold text-gray-800">
-            Tài khoản
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Tài khoản</h1>
         </div>
 
-        {/* CARD */}
         <div className="bg-white rounded-2xl shadow-md p-6">
-
-          {/* AVATAR */}
           <div className="text-center mb-6">
             <img
               src={resolveAvatarUrl(profile.avatar || user.avatar)}
@@ -277,24 +264,15 @@ const AccountPage = () => {
               }}
             />
 
-            <h2 className="mt-3 font-semibold text-lg">
-              {profile.fullName}
-            </h2>
-
-            <p className="text-gray-500 text-sm">
-              {profile.email}
-            </p>
+            <h2 className="mt-3 font-semibold text-lg">{profile.fullName}</h2>
+            <p className="text-gray-500 text-sm">{profile.email}</p>
           </div>
 
-          {/* EDIT MODE */}
           {isEditing ? (
             <form onSubmit={handleSave} className="space-y-4">
-
               <input
                 value={form.fullName}
-                onChange={(e) =>
-                  setForm(prev => ({ ...prev, fullName: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
                 className="w-full border p-2 rounded-lg"
                 placeholder="Họ tên"
               />
@@ -302,39 +280,33 @@ const AccountPage = () => {
               <div>
                 <input
                   value={form.phone}
-                  onChange={(e) =>
-                    setForm(prev => ({ ...prev, phone: e.target.value }))
-                  }
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
                   className={`w-full border p-2 rounded-lg ${
                     isPhoneInvalid ? 'border-red-500' : ''
                   }`}
                   placeholder="Số điện thoại"
                 />
 
-                {isPhoneInvalid && (
+                {isPhoneInvalid ? (
                   <p className="text-red-500 text-xs mt-1">
                     SĐT phải 10 số và bắt đầu bằng 0
                   </p>
-                )}
+                ) : null}
               </div>
 
               <input
                 value={form.address}
-                onChange={(e) =>
-                  setForm(prev => ({ ...prev, address: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                 className="w-full border p-2 rounded-lg"
                 placeholder="Địa chỉ"
               />
 
               <div className="flex gap-2">
                 <button
-                  disabled={saving || !form.phone ||
-                    form.phone.trim() === '' ||
-                    !PHONE_REGEX.test(form.phone)}
+                  disabled={saving || !form.phone || form.phone.trim() === '' || !PHONE_REGEX.test(form.phone)}
                   className="flex-1 bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
                 >
-                  {saving ? "Đang lưu..." : "Lưu"}
+                  {saving ? 'Đang lưu...' : 'Lưu'}
                 </button>
 
                 <button
@@ -345,19 +317,17 @@ const AccountPage = () => {
                   Hủy
                 </button>
               </div>
-
             </form>
           ) : (
             <div className="space-y-4">
-
               <div className="flex items-center gap-2">
                 <Phone size={16} />
-                <span>{profile.phone || "Chưa có"}</span>
+                <span>{profile.phone || 'Chưa có'}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <MapPin size={16} />
-                <span>{profile.address || "Chưa có"}</span>
+                <span>{profile.address || 'Chưa có'}</span>
               </div>
 
               <hr />
@@ -373,80 +343,103 @@ const AccountPage = () => {
               <hr className="my-4" />
 
               <button
-                onClick={() => setShowPwdForm(!showPwdForm)}
+                onClick={() => setShowPwdForm((current) => !current)}
                 className="w-full border py-2 rounded-lg mb-3"
               >
                 Đổi mật khẩu
               </button>
 
-              {showPwdForm && (
+              {showPwdForm ? (
                 <form onSubmit={handleChangePassword} className="space-y-3">
-
                   <div>
-                    <input
-                      ref={inputRefs.currentPassword}
-                      type="password"
-                      value={pwd.currentPassword}
-                      onChange={(e) => setPwd({ ...pwd, currentPassword: e.target.value })}
-                      className={`w-full border p-2 rounded-lg ${
-                        errors.currentPassword ? "border-red-500" : ""
-                      }`}
-                      placeholder="Mật khẩu hiện tại"
-                    />
+                    <div className="relative">
+                      <input
+                        ref={inputRefs.currentPassword}
+                        type={showPwdFields.currentPassword ? 'text' : 'password'}
+                        value={pwd.currentPassword}
+                        onChange={(e) => setPwd({ ...pwd, currentPassword: e.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${
+                          errors.currentPassword ? 'border-red-500' : ''
+                        }`}
+                        placeholder="Mật khẩu hiện tại"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePwdField('currentPassword')}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 transition hover:text-gray-700"
+                        aria-label={showPwdFields.currentPassword ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'}
+                      >
+                        {showPwdFields.currentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
 
-                    {errors.currentPassword && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.currentPassword}
-                      </p>
-                    )}
+                    {errors.currentPassword ? (
+                      <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
+                    ) : null}
                   </div>
 
                   <div>
-                    <input
-                      ref={inputRefs.newPassword}
-                      type="password"
-                      value={pwd.newPassword}
-                      onChange={(e) => setPwd({ ...pwd, newPassword: e.target.value })}
-                      className={`w-full border p-2 rounded-lg ${
-                        errors.newPassword ? "border-red-500" : ""
-                      }`}
-                      placeholder="Mật khẩu mới"
-                    />
+                    <div className="relative">
+                      <input
+                        ref={inputRefs.newPassword}
+                        type={showPwdFields.newPassword ? 'text' : 'password'}
+                        value={pwd.newPassword}
+                        onChange={(e) => setPwd({ ...pwd, newPassword: e.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${
+                          errors.newPassword ? 'border-red-500' : ''
+                        }`}
+                        placeholder="Mật khẩu mới"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePwdField('newPassword')}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 transition hover:text-gray-700"
+                        aria-label={showPwdFields.newPassword ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'}
+                      >
+                        {showPwdFields.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
 
-                    {errors.newPassword && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.newPassword}
-                      </p>
-                    )}
+                    {errors.newPassword ? (
+                      <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
+                    ) : null}
                   </div>
 
                   <div>
-                    <input
-                      ref={inputRefs.confirmPassword}
-                      type="password"
-                      value={pwd.confirmPassword}
-                      onChange={(e) => setPwd({ ...pwd, confirmPassword: e.target.value })}
-                      className={`w-full border p-2 rounded-lg ${
-                        errors.confirmPassword ? "border-red-500" : ""
-                      }`}
-                      placeholder="Xác nhận mật khẩu"
-                    />
+                    <div className="relative">
+                      <input
+                        ref={inputRefs.confirmPassword}
+                        type={showPwdFields.confirmPassword ? 'text' : 'password'}
+                        value={pwd.confirmPassword}
+                        onChange={(e) => setPwd({ ...pwd, confirmPassword: e.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${
+                          errors.confirmPassword ? 'border-red-500' : ''
+                        }`}
+                        placeholder="Xác nhận mật khẩu"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePwdField('confirmPassword')}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 transition hover:text-gray-700"
+                        aria-label={showPwdFields.confirmPassword ? 'Ẩn xác nhận mật khẩu' : 'Hiện xác nhận mật khẩu'}
+                      >
+                        {showPwdFields.confirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
 
-                    {errors.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.confirmPassword}
-                      </p>
-                    )}
+                    {errors.confirmPassword ? (
+                      <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                    ) : null}
                   </div>
 
                   <button
                     disabled={changingPwd}
                     className="w-full bg-green-600 text-white py-2 rounded-lg disabled:opacity-50"
                   >
-                    {changingPwd ? "Đang xử lý..." : "Xác nhận đổi mật khẩu"}
+                    {changingPwd ? 'Đang xử lý...' : 'Xác nhận đổi mật khẩu'}
                   </button>
                 </form>
-              )}
+              ) : null}
 
               <button
                 onClick={handleLogout}
@@ -455,10 +448,8 @@ const AccountPage = () => {
                 <LogOut size={16} className="inline mr-2" />
                 Đăng xuất
               </button>
-
             </div>
           )}
-
         </div>
       </div>
     </div>

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
 
+const PAGE_SIZE = 8;
+
 function formatCurrency(value) {
-  if (value == null || Number.isNaN(Number(value))) return '0₫';
-  return `${Number(value).toLocaleString('vi-VN')}₫`;
+  if (value == null || Number.isNaN(Number(value))) return '0 VND';
+  return `${Number(value).toLocaleString('vi-VN')} VND`;
 }
 
 function stockMeta(stock) {
@@ -13,7 +15,49 @@ function stockMeta(stock) {
   return { label: 'Còn hàng', wrap: 'bg-blue-50 text-blue-600 border-blue-100', dot: 'bg-blue-600' };
 }
 
-export function BooksPhase1({ books, loading, error, busyBookId, onCreate, onEdit, onDelete, onRefresh }) {
+function buildPageNumbers(currentPage, totalPages) {
+  const start = Math.max(currentPage - 2, 0);
+  const end = Math.min(start + 5, totalPages);
+  return Array.from({ length: Math.max(end - start, 0) }, (_, index) => start + index);
+}
+
+export function BooksPhase1({
+  books,
+  loading,
+  error,
+  busyBookId,
+  categoryOptions,
+  selectedCategory,
+  selectedStock,
+  onCreate,
+  onEdit,
+  onDelete,
+  onRefresh,
+  onCategoryChange,
+  onStockChange,
+}) {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [books.length, selectedCategory, selectedStock]);
+
+  const totalPages = Math.max(1, Math.ceil(books.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
+
+  const paginatedBooks = useMemo(
+    () => books.slice(safeCurrentPage * PAGE_SIZE, (safeCurrentPage + 1) * PAGE_SIZE),
+    [books, safeCurrentPage],
+  );
+
+  const pageNumbers = useMemo(
+    () => buildPageNumbers(safeCurrentPage, totalPages),
+    [safeCurrentPage, totalPages],
+  );
+
+  const startIndex = books.length ? safeCurrentPage * PAGE_SIZE + 1 : 0;
+  const endIndex = Math.min((safeCurrentPage + 1) * PAGE_SIZE, books.length);
+
   return (
     <main className="ml-64 min-h-screen px-8 pb-12 pt-8">
       <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -37,6 +81,32 @@ export function BooksPhase1({ books, loading, error, busyBookId, onCreate, onEdi
           <MaterialIcon className="text-lg">filter_list</MaterialIcon>
           Bộ lọc:
         </div>
+        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <span>Danh mục</span>
+          <select
+            className="border-none bg-transparent text-sm font-medium text-slate-900 focus:outline-none"
+            value={selectedCategory}
+            onChange={(event) => onCategoryChange(event.target.value)}
+          >
+            <option value="all">Tất cả</option>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <span>Trạng thái</span>
+          <select
+            className="border-none bg-transparent text-sm font-medium text-slate-900 focus:outline-none"
+            value={selectedStock}
+            onChange={(event) => onStockChange(event.target.value)}
+          >
+            <option value="all">Tất cả</option>
+            <option value="in-stock">Còn hàng</option>
+            <option value="low-stock">Sắp hết</option>
+            <option value="out-of-stock">Hết hàng</option>
+          </select>
+        </label>
         <div className="flex-grow" />
         <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600" onClick={onRefresh} type="button">
           <MaterialIcon className="text-lg">restart_alt</MaterialIcon>
@@ -45,6 +115,12 @@ export function BooksPhase1({ books, loading, error, busyBookId, onCreate, onEdi
       </section>
 
       {error ? <p className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p> : null}
+
+      {!loading && !error ? (
+        <p className="mb-4 text-sm text-slate-500">
+          Hiển thị {startIndex} - {endIndex} / {books.length} sách phù hợp với bộ lọc hiện tại.
+        </p>
+      ) : null}
 
       <div className="overflow-hidden rounded-lg border border-slate-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -60,7 +136,15 @@ export function BooksPhase1({ books, loading, error, busyBookId, onCreate, onEdi
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {books.map((book) => {
+              {!loading && books.length === 0 ? (
+                <tr>
+                  <td className="px-6 py-10 text-center text-sm text-slate-500" colSpan="6">
+                    Không tìm thấy sách phù hợp.
+                  </td>
+                </tr>
+              ) : null}
+
+              {paginatedBooks.map((book) => {
                 const stock = stockMeta(book.stock);
                 const isBusy = busyBookId === book.id;
 
@@ -98,6 +182,46 @@ export function BooksPhase1({ books, loading, error, busyBookId, onCreate, onEdi
             </tbody>
           </table>
         </div>
+
+        {books.length > 0 ? (
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+            <p className="text-xs font-bold uppercase tracking-tighter text-slate-500">
+              Trang {safeCurrentPage + 1} / {totalPages}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30"
+                type="button"
+                disabled={safeCurrentPage === 0}
+                onClick={() => setCurrentPage((page) => Math.max(page - 1, 0))}
+              >
+                <MaterialIcon className="text-[20px]">chevron_left</MaterialIcon>
+              </button>
+
+              {pageNumbers.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  className={`flex h-8 w-8 items-center justify-center rounded text-xs font-bold ${
+                    pageNumber === safeCurrentPage ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white'
+                  }`}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNumber)}
+                >
+                  {pageNumber + 1}
+                </button>
+              ))}
+
+              <button
+                className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30 hover:bg-white"
+                type="button"
+                disabled={safeCurrentPage + 1 >= totalPages}
+                onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages - 1))}
+              >
+                <MaterialIcon className="text-[20px]">chevron_right</MaterialIcon>
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );
@@ -181,7 +305,7 @@ export function BookFormPhase1({ mode, book, submitting, uploadLoading, error, o
                 <div className="md:col-span-2"><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Tên sách</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Nhập tiêu đề sách..." type="text" required /></div>
                 <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Tác giả</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.author} onChange={(event) => setForm((current) => ({ ...current, author: event.target.value }))} placeholder="Tên tác giả..." type="text" required /></div>
                 <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Thể loại</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} placeholder="Văn học, Kỹ năng..." type="text" /></div>
-                <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Giá bán (VNĐ)</label><div className="relative"><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 pr-12 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="0" type="number" min="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">₫</span></div></div>
+                <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Giá bán (VNĐ)</label><div className="relative"><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 pr-12 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="0" type="number" min="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">đ</span></div></div>
                 <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Số lượng tồn kho</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value }))} placeholder="0" type="number" min="0" /></div>
                 <div><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">Điểm đánh giá</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.rating} onChange={(event) => setForm((current) => ({ ...current, rating: event.target.value }))} placeholder="0" type="number" min="0" max="5" step="0.1" /></div>
                 <div className="md:col-span-2"><label className="mb-2 block px-1 text-[0.75rem] font-semibold text-slate-500">URL ảnh</label><input className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20" value={form.image} onChange={(event) => setForm((current) => ({ ...current, image: event.target.value }))} placeholder="https://..." type="text" /></div>

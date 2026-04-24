@@ -49,6 +49,13 @@ function initialsOf(value = '') {
     .join('') || 'AD';
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 function SideNav({ currentPage, onNavigate, onLogout }) {
   const subtitle = 'Hệ thống quản lý sách';
 
@@ -92,7 +99,7 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
   );
 }
 
-function TopBar({ currentPage, adminUser }) {
+function TopBar({ currentPage, adminUser, searchValue, onSearchChange }) {
   const placeholder =
     currentPage === 'dashboard'
       ? 'Tìm kiếm sách, đơn hàng...'
@@ -108,7 +115,13 @@ function TopBar({ currentPage, adminUser }) {
     <header className="sticky top-0 right-0 z-30 ml-64 flex h-16 items-center justify-between border-b border-slate-100 bg-white/80 px-8 shadow-sm backdrop-blur-md">
       <div className="flex flex-1 items-center gap-4">
         <div className="group relative w-full max-w-md rounded-full focus-within:ring-2 focus-within:ring-blue-500/20">
-          <input className="w-full rounded-full border-none bg-slate-100 py-2 pl-10 pr-4 text-sm transition-all focus:ring-0" placeholder={placeholder} type="text" />
+          <input
+            className="w-full rounded-full border-none bg-slate-100 py-2 pl-10 pr-4 text-sm transition-all focus:ring-0"
+            placeholder={placeholder}
+            type="text"
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+          />
           <MaterialIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">search</MaterialIcon>
         </div>
       </div>
@@ -175,6 +188,14 @@ function App() {
   const [editingBook, setEditingBook] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetailLoading, setOrderDetailLoading] = useState(false);
+  const [dashboardSearch, setDashboardSearch] = useState('');
+  const [bookSearch, setBookSearch] = useState('');
+  const [bookCategoryFilter, setBookCategoryFilter] = useState('all');
+  const [bookStockFilter, setBookStockFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [orderSearch, setOrderSearch] = useState('');
 
   useEffect(() => {
     const nextToken = extractTokenFromUrl();
@@ -188,6 +209,10 @@ function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [page]);
 
   useEffect(() => {
     if (!token) {
@@ -237,6 +262,10 @@ function App() {
   }, [token]);
 
   const navigate = (nextPage) => {
+    if (nextPage === 'orders') {
+      setSelectedOrder(null);
+      setOrderDetailLoading(false);
+    }
     window.location.hash = nextPage;
     setPage(nextPage);
   };
@@ -283,6 +312,35 @@ function App() {
     } finally {
       setOrdersLoading(false);
     }
+  };
+
+  const resetBookFilters = () => {
+    setBookSearch('');
+    setBookCategoryFilter('all');
+    setBookStockFilter('all');
+  };
+
+  const resetUserFilters = () => {
+    setUserSearch('');
+    setUserRoleFilter('all');
+    setUserStatusFilter('all');
+  };
+
+  const handleRefreshBooks = async () => {
+    resetBookFilters();
+    await loadBooks();
+  };
+
+  const handleRefreshUsers = async () => {
+    resetUserFilters();
+    await loadUsers();
+  };
+
+  const handleRefreshOrders = async () => {
+    setOrderSearch('');
+    setSelectedOrder(null);
+    setOrderDetailLoading(false);
+    await loadOrders();
   };
 
   useEffect(() => {
@@ -509,15 +567,89 @@ function App() {
     return <AuthGate status={authStatus} authError={authError} onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
   }
 
-  let content = <DashboardPhase1 />;
+  const normalizedBookSearch = normalizeText(bookSearch);
+  const bookCategories = Array.from(new Set(
+    books.map((book) => (book.category || '').trim()).filter(Boolean),
+  )).sort((left, right) => left.localeCompare(right, 'vi'));
+
+  const visibleBooks = books.filter((book) => {
+    const matchesSearch =
+      !normalizedBookSearch ||
+      [book.title, book.author, book.category, book.id].some((value) => normalizeText(value).includes(normalizedBookSearch));
+
+    const matchesCategory = bookCategoryFilter === 'all' || (book.category || '').trim() === bookCategoryFilter;
+
+    const stock = Number(book.stock || 0);
+    const matchesStock =
+      bookStockFilter === 'all' ||
+      (bookStockFilter === 'in-stock' && stock > 0) ||
+      (bookStockFilter === 'low-stock' && stock > 0 && stock < 10) ||
+      (bookStockFilter === 'out-of-stock' && stock <= 0);
+
+    return matchesSearch && matchesCategory && matchesStock;
+  });
+
+  const normalizedUserSearch = normalizeText(userSearch);
+  const userRoleOptions = Array.from(
+    new Set(users.flatMap((user) => user.roles?.map((role) => role.name) || [])),
+  ).sort((left, right) => left.localeCompare(right, 'vi'));
+
+  const visibleUsers = users.filter((user) => {
+    const matchesSearch =
+      !normalizedUserSearch ||
+      [user.fullName, user.email, user.id, ...(user.roles?.map((role) => role.name) || [])]
+        .some((value) => normalizeText(value).includes(normalizedUserSearch));
+
+    const matchesRole = userRoleFilter === 'all' || user.roles?.some((role) => role.name === userRoleFilter);
+    const matchesStatus = userStatusFilter === 'all' || (user.status || 'ACTIVE') === userStatusFilter;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const normalizedDashboardSearch = normalizeText(dashboardSearch);
+  const visibleDashboardBooks = books.filter((book) => (
+    !normalizedDashboardSearch ||
+    [book.title, book.author, book.category, book.id]
+      .some((value) => normalizeText(value).includes(normalizedDashboardSearch))
+  ));
+
+  const visibleDashboardUsers = users.filter((user) => (
+    !normalizedDashboardSearch ||
+    [user.fullName, user.email, user.id, ...(user.roles?.map((role) => role.name) || [])]
+      .some((value) => normalizeText(value).includes(normalizedDashboardSearch))
+  ));
+
+  const visibleDashboardOrders = orders.filter((order) => (
+    !normalizedDashboardSearch ||
+    [order.orderId, order.customerName, order.customerEmail, order.customerId, order.phone, order.address]
+      .some((value) => normalizeText(value).includes(normalizedDashboardSearch))
+  ));
+
+  let content = (
+    <DashboardPhase1
+      books={visibleDashboardBooks}
+      users={visibleDashboardUsers}
+      orders={visibleDashboardOrders}
+      loading={booksLoading || usersLoading || ordersLoading}
+      searchValue={dashboardSearch}
+      onRefresh={async () => {
+        setDashboardSearch('');
+        await Promise.all([loadBooks(), loadUsers(), loadOrders()]);
+      }}
+      onNavigate={navigate}
+    />
+  );
 
   if (page === 'books') {
     content = (
       <BooksPhase1
-        books={books}
+        books={visibleBooks}
         loading={booksLoading}
         error={booksError}
         busyBookId={busyBookId}
+        categoryOptions={bookCategories}
+        selectedCategory={bookCategoryFilter}
+        selectedStock={bookStockFilter}
         onCreate={() => {
           setEditingBook(null);
           setBookFormError('');
@@ -529,7 +661,9 @@ function App() {
           navigate('book-edit');
         }}
         onDelete={handleDeleteBook}
-        onRefresh={loadBooks}
+        onRefresh={handleRefreshBooks}
+        onCategoryChange={setBookCategoryFilter}
+        onStockChange={setBookStockFilter}
       />
     );
   } else if (page === 'book-create') {
@@ -560,10 +694,13 @@ function App() {
   } else if (page === 'users') {
     content = (
       <UsersPhase1
-        users={users}
+        users={visibleUsers}
         loading={usersLoading}
         error={usersError}
         busyUserId={busyUserId}
+        roleOptions={userRoleOptions}
+        selectedRole={userRoleFilter}
+        selectedStatus={userStatusFilter}
         onCreate={() => {
           setEditingUser(null);
           setUserFormError('');
@@ -576,6 +713,9 @@ function App() {
         }}
         onToggleStatus={handleToggleUserStatus}
         onDelete={handleDeleteUser}
+        onRoleChange={setUserRoleFilter}
+        onStatusChange={setUserStatusFilter}
+        onRefresh={handleRefreshUsers}
       />
     );
   } else if (page === 'user-create') {
@@ -608,9 +748,10 @@ function App() {
         loading={ordersLoading}
         error={ordersError}
         busyOrderId={busyOrderId}
+        searchValue={orderSearch}
         selectedOrder={selectedOrder}
         detailLoading={orderDetailLoading}
-        onRefresh={loadOrders}
+        onRefresh={handleRefreshOrders}
         onViewOrder={handleViewOrder}
         onCloseDetail={() => setSelectedOrder(null)}
         onUpdateStatus={handleUpdateOrderStatus}
@@ -625,7 +766,12 @@ function App() {
   return (
     <div className="bg-white font-['Inter'] text-slate-900 antialiased">
       <SideNav currentPage={page} onNavigate={navigate} onLogout={handleLogout} />
-      <TopBar currentPage={page} adminUser={adminUser} />
+      <TopBar
+        currentPage={page}
+        adminUser={adminUser}
+        searchValue={page === 'dashboard' ? dashboardSearch : page === 'books' ? bookSearch : page === 'users' ? userSearch : page === 'orders' ? orderSearch : ''}
+        onSearchChange={page === 'dashboard' ? setDashboardSearch : page === 'books' ? setBookSearch : page === 'users' ? setUserSearch : page === 'orders' ? setOrderSearch : () => {}}
+      />
       {content}
     </div>
   );

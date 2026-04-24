@@ -6,10 +6,29 @@ const STATUS_FILTERS = [
   { value: 'ALL', label: 'Tất cả đơn' },
   { value: 'PENDING', label: 'Chờ xử lý' },
   { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
+  { value: 'CONFIRMED', label: 'Đã xác nhận' },
   { value: 'SHIPPING', label: 'Đang giao' },
   { value: 'COMPLETED', label: 'Hoàn thành' },
   { value: 'CANCELLED', label: 'Đã hủy' },
 ];
+
+const PAYMENT_STATUS_FILTERS = [
+  { value: 'ALL', label: 'Mọi thanh toán' },
+  { value: 'UNPAID', label: 'Chưa thanh toán' },
+  { value: 'PENDING', label: 'Đang chờ' },
+  { value: 'PAID', label: 'Đã thanh toán' },
+  { value: 'FAILED', label: 'Thất bại' },
+  { value: 'REFUNDED', label: 'Đã hoàn tiền' },
+];
+
+const PAGE_SIZE = 8;
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
 
 function formatCurrency(value) {
   if (value == null || Number.isNaN(Number(value))) return '0đ';
@@ -58,7 +77,7 @@ function statusMeta(status) {
     case 'CONFIRMED':
       return { label: 'Đã xác nhận', wrap: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-500' };
     case 'SHIPPING':
-      return { label: 'Đang giao', wrap: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-500' };
+      return { label: 'Đang giao', wrap: 'bg-sky-50 text-sky-700 border-sky-100', dot: 'bg-sky-500' };
     case 'COMPLETED':
       return { label: 'Hoàn thành', wrap: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' };
     case 'CANCELLED':
@@ -68,12 +87,54 @@ function statusMeta(status) {
   }
 }
 
-function matchesKeyword(order, keyword) {
-  if (!keyword) return true;
-  const normalized = keyword.trim().toLowerCase();
-  return [order.orderId, order.customerName, order.customerEmail, order.customerId, order.phone, order.address].some((value) =>
-    String(value || '').toLowerCase().includes(normalized),
-  );
+function paymentStatusLabel(status) {
+  switch (status) {
+    case 'UNPAID':
+      return 'Chưa thanh toán';
+    case 'PENDING':
+      return 'Đang chờ';
+    case 'PAID':
+      return 'Đã thanh toán';
+    case 'FAILED':
+      return 'Thất bại';
+    case 'REFUNDED':
+      return 'Đã hoàn tiền';
+    default:
+      return status || '--';
+  }
+}
+
+function buildOrderActions(order) {
+  const actions = [{ key: 'view', label: 'Xem chi tiết', icon: 'visibility' }];
+
+  if (order.status === 'PENDING' || order.status === 'PENDING_PAYMENT') {
+    actions.push({ key: 'confirm', label: 'Xác nhận đơn', icon: 'check_circle', status: 'CONFIRMED' });
+    actions.push({ key: 'cancel', label: 'Hủy đơn', icon: 'cancel', status: 'CANCELLED', danger: true });
+  } else if (order.status === 'CONFIRMED') {
+    actions.push({ key: 'ship', label: 'Chuyển sang giao hàng', icon: 'local_shipping', status: 'SHIPPING' });
+    actions.push({ key: 'cancel', label: 'Hủy đơn', icon: 'cancel', status: 'CANCELLED', danger: true });
+  } else if (order.status === 'SHIPPING') {
+    actions.push({ key: 'complete', label: 'Đánh dấu hoàn thành', icon: 'task_alt', status: 'COMPLETED' });
+  }
+
+  return actions;
+}
+
+function escapeCsv(value) {
+  const normalized = String(value ?? '').replace(/"/g, '""');
+  return `"${normalized}"`;
+}
+
+function downloadCsv(filename, content) {
+  const blob = new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function DetailPanel({ selectedOrder, onCloseDetail }) {
@@ -128,6 +189,10 @@ function DetailPanel({ selectedOrder, onCloseDetail }) {
                 {status.label}
               </span>
             </div>
+            <div className="mt-4 space-y-1 text-sm text-slate-500">
+              <p>Thanh toán: {paymentStatusLabel(selectedOrder.paymentStatus)}</p>
+              <p>Hình thức: {selectedOrder.paymentMethod || '--'}</p>
+            </div>
             <p className="mt-4 text-lg font-bold text-slate-900">{formatCurrency(selectedOrder.totalPrice)}</p>
             <p className="mt-1 text-sm text-slate-500">Ngày đặt: {formatDateTime(selectedOrder.createdAt)}</p>
           </div>
@@ -142,25 +207,47 @@ export default function OrdersPage({
   loading,
   error,
   busyOrderId,
+  searchValue,
   selectedOrder,
   detailLoading,
   onRefresh,
   onViewOrder,
   onCloseDetail,
+  onUpdateStatus,
 }) {
-  const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('newest');
+  const [openMenuOrderId, setOpenMenuOrderId] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const detailPanelRef = useRef(null);
+  const menuWrapperRef = useRef(null);
 
-  const filteredOrders = useMemo(
-    () =>
-      orders.filter((order) => {
-        const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
-        return matchesStatus && matchesKeyword(order, keyword);
-      }),
-    [orders, statusFilter, keyword],
-  );
+  const filteredOrders = useMemo(() => {
+    const normalizedSearch = normalizeText(searchValue);
+    const result = orders.filter((order) => {
+      const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+      const matchesPaymentStatus = paymentStatusFilter === 'ALL' || (order.paymentStatus || 'UNPAID') === paymentStatusFilter;
+      const matchesSearch =
+        !normalizedSearch ||
+        [order.orderId, order.customerName, order.customerEmail, order.customerId, order.phone, order.address]
+          .some((value) => normalizeText(value).includes(normalizedSearch));
 
+      return matchesStatus && matchesPaymentStatus && matchesSearch;
+    });
+
+    result.sort((left, right) => {
+      if (sortBy === 'amount_desc') return Number(right.totalPrice || 0) - Number(left.totalPrice || 0);
+      if (sortBy === 'amount_asc') return Number(left.totalPrice || 0) - Number(right.totalPrice || 0);
+      if (sortBy === 'oldest') return new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime();
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+
+    return result;
+  }, [orders, paymentStatusFilter, searchValue, sortBy, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const pendingCount = orders.filter((order) => order.status === 'PENDING' || order.status === 'PENDING_PAYMENT').length;
   const shippingCount = orders.filter((order) => order.status === 'SHIPPING').length;
   const revenue = orders.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
@@ -170,17 +257,65 @@ export default function OrdersPage({
     detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [selectedOrder, detailLoading]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredOrders.length]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!menuWrapperRef.current?.contains(event.target)) {
+        setOpenMenuOrderId('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleExportCsv = () => {
+    const header = ['Mã đơn', 'Khách hàng', 'Email', 'Tổng tiền', 'Trạng thái', 'Thanh toán', 'Hình thức', 'Ngày đặt'];
+    const rows = filteredOrders.map((order) => [
+      order.orderId,
+      order.customerName,
+      order.customerEmail,
+      order.totalPrice,
+      order.status,
+      order.paymentStatus,
+      order.paymentMethod,
+      order.createdAt,
+    ]);
+
+    const csv = [header, ...rows].map((row) => row.map((cell) => escapeCsv(cell)).join(',')).join('\n');
+    downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const handleRefreshOrders = async () => {
+    setStatusFilter('ALL');
+    setPaymentStatusFilter('ALL');
+    setSortBy('newest');
+    setCurrentPage(1);
+    setOpenMenuOrderId('');
+    await onRefresh();
+  };
+
+  const startIndex = filteredOrders.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const endIndex = Math.min(currentPage * PAGE_SIZE, filteredOrders.length);
+
   return (
     <main className="ml-64 min-h-screen p-8">
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-12">
         <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 p-8 shadow-lg md:col-span-8">
           <div className="relative z-10">
-            <h2 className="mb-1 text-xs font-medium uppercase tracking-widest text-white/80">TỔNG SỐ ĐƠN HÀNG</h2>
+            <h2 className="mb-1 text-xs font-medium uppercase tracking-widest text-white/80">Tổng số đơn hàng</h2>
             <p className="mb-6 text-4xl font-bold tracking-tight text-white">{orders.length} đơn hàng</p>
-            <div className="flex gap-12">
+            <div className="flex flex-wrap gap-8">
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-white/60">Doanh thu</span>
                 <span className="text-lg font-bold text-white">{formatCurrency(revenue)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-white/60">Chờ xử lý</span>
+                <span className="text-lg font-bold text-white">{pendingCount}</span>
               </div>
             </div>
           </div>
@@ -199,7 +334,7 @@ export default function OrdersPage({
               </span>
             </div>
             <p className="text-sm font-medium text-slate-500">Đang vận chuyển</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{shippingCount} Đơn hàng</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{shippingCount} đơn hàng</p>
           </div>
           <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-blue-600" style={{ width: `${orders.length ? Math.max((shippingCount / orders.length) * 100, 8) : 0}%` }} />
@@ -207,45 +342,52 @@ export default function OrdersPage({
         </div>
       </div>
 
-      <div className="sticky top-16 z-30 mb-6 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md">
-        <div className="flex flex-nowrap items-center justify-between gap-3 overflow-x-auto">
-          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto">
-            {STATUS_FILTERS.map((filter) => {
-              const active = statusFilter === filter.value;
-              return (
-                <button
-                  key={filter.value}
-                  className={`h-9 whitespace-nowrap rounded-full px-4 text-[13px] leading-none transition-colors ${
-                    active
-                      ? 'bg-blue-600 font-semibold text-white shadow-md shadow-blue-600/20'
-                      : 'border border-slate-200 bg-white font-semibold text-slate-500 shadow-sm hover:bg-slate-50'
-                  }`}
-                  type="button"
-                  onClick={() => setStatusFilter(filter.value)}
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <button className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-500 transition-all hover:border-blue-200 hover:shadow-sm" type="button">
-              <MaterialIcon className="text-[18px]">filter_list</MaterialIcon>
-              Lọc
-            </button>
-            <button className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-500 transition-all hover:border-blue-200 hover:shadow-sm" type="button" onClick={onRefresh}>
-              <MaterialIcon className="text-[18px]">download</MaterialIcon>
-              {loading ? 'Đang tải' : 'Xuất CSV'}
-            </button>
-          </div>
+      <section className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 shadow-sm lg:flex-nowrap">
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-500">
+          <MaterialIcon className="text-lg">filter_list</MaterialIcon>
+          Bộ lọc:
         </div>
-      </div>
+        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <span>Trạng thái</span>
+          <select className="w-28 border-none bg-transparent pr-5 text-sm font-medium text-slate-900 focus:outline-none" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            {STATUS_FILTERS.map((filter) => (
+              <option key={filter.value} value={filter.value}>{filter.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <span>Thanh toán</span>
+          <select className="w-36 border-none bg-transparent pr-5 text-sm font-medium text-slate-900 focus:outline-none" value={paymentStatusFilter} onChange={(event) => setPaymentStatusFilter(event.target.value)}>
+            {PAYMENT_STATUS_FILTERS.map((filter) => (
+              <option key={filter.value} value={filter.value}>{filter.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <span>Sắp xếp</span>
+          <select className="w-24 border-none bg-transparent pr-5 text-sm font-medium text-slate-900 focus:outline-none" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            <option value="newest">Mới nhất</option>
+            <option value="oldest">Cũ nhất</option>
+            <option value="amount_desc">Tiền giảm dần</option>
+            <option value="amount_asc">Tiền tăng dần</option>
+          </select>
+        </label>
+        <div className="flex items-center gap-2 lg:ml-auto lg:flex-shrink-0">
+          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" type="button" onClick={handleExportCsv} disabled={!filteredOrders.length}>
+            <MaterialIcon className="text-lg">download</MaterialIcon>
+            Xuất CSV
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600" type="button" onClick={handleRefreshOrders}>
+            <MaterialIcon className="text-lg">restart_alt</MaterialIcon>
+            {loading ? 'Đang tải...' : 'Làm mới'}
+          </button>
+        </div>
+      </section>
 
       <div className="overflow-hidden rounded-lg border border-slate-100 bg-white shadow-sm">
         {error ? <p className="mx-6 mt-6 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p> : null}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" ref={menuWrapperRef}>
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -258,7 +400,7 @@ export default function OrdersPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {!loading && !filteredOrders.length ? (
+              {!loading && !paginatedOrders.length ? (
                 <tr>
                   <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={6}>
                     Không có đơn hàng nào để hiển thị.
@@ -266,17 +408,14 @@ export default function OrdersPage({
                 </tr>
               ) : null}
 
-              {filteredOrders.map((order, index) => {
+              {paginatedOrders.map((order, index) => {
                 const status = statusMeta(order.status);
                 const isBusy = busyOrderId === order.orderId;
                 const isSelected = selectedOrder?.orderId === order.orderId;
+                const actions = buildOrderActions(order);
 
                 return (
-                  <tr
-                    key={order.orderId}
-                    className={`group cursor-pointer transition-colors hover:bg-slate-50/30 ${isSelected ? 'bg-blue-50/40' : ''}`}
-                    onClick={() => onViewOrder(order.orderId)}
-                  >
+                  <tr key={order.orderId} className={`group cursor-pointer transition-colors hover:bg-slate-50/30 ${isSelected ? 'bg-blue-50/40' : ''}`} onClick={() => onViewOrder(order.orderId)}>
                     <td className="px-6 py-5">
                       <span className="font-mono text-sm font-bold text-blue-600">#{order.orderId?.slice(0, 8)}</span>
                     </td>
@@ -301,18 +440,43 @@ export default function OrdersPage({
                       </span>
                     </td>
                     <td className="px-6 py-5 text-xs font-medium text-slate-500">{formatDateTime(order.createdAt)}</td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="relative px-6 py-5 text-right">
                       <button
-                        className="p-1.5 text-slate-400 transition-colors hover:text-blue-600 disabled:opacity-50"
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 disabled:opacity-50"
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          onViewOrder(order.orderId);
+                          setOpenMenuOrderId((current) => (current === order.orderId ? '' : order.orderId));
                         }}
                         disabled={isBusy}
                       >
                         <MaterialIcon className="text-[20px]">{detailLoading && isSelected ? 'progress_activity' : 'more_vert'}</MaterialIcon>
                       </button>
+
+                      {openMenuOrderId === order.orderId ? (
+                        <div className="absolute right-6 top-14 z-20 min-w-56 overflow-hidden rounded-xl border border-slate-100 bg-white py-2 shadow-xl" onClick={(event) => event.stopPropagation()}>
+                          {actions.map((action) => (
+                            <button
+                              key={action.key}
+                              className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors ${
+                                action.danger ? 'text-red-600 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuOrderId('');
+                                if (action.key === 'view') {
+                                  onViewOrder(order.orderId);
+                                  return;
+                                }
+                                onUpdateStatus(order, action.status);
+                              }}
+                            >
+                              <MaterialIcon className="text-[18px]">{action.icon}</MaterialIcon>
+                              <span>{action.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 );
@@ -322,17 +486,21 @@ export default function OrdersPage({
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-          <p className="text-xs font-bold uppercase tracking-tighter text-slate-500">Hiển thị {filteredOrders.length ? `1 - ${filteredOrders.length}` : '0'} của {orders.length} đơn hàng</p>
+          <p className="text-xs font-bold uppercase tracking-tighter text-slate-500">
+            Hiển thị {startIndex} - {endIndex} của {filteredOrders.length} đơn hàng
+          </p>
           <div className="flex items-center gap-1">
-            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30" type="button" disabled>
+            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}>
               <MaterialIcon className="text-[20px]">chevron_left</MaterialIcon>
             </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white" type="button">1</button>
-            <button className="flex h-8 w-8 items-center justify-center rounded text-xs font-bold text-slate-500 hover:bg-white" type="button">2</button>
-            <button className="flex h-8 w-8 items-center justify-center rounded text-xs font-bold text-slate-500 hover:bg-white" type="button">3</button>
-            <span className="px-1 text-xs text-slate-400">...</span>
-            <button className="flex h-8 w-8 items-center justify-center rounded text-xs font-bold text-slate-500 hover:bg-white" type="button">25</button>
-            <button className="rounded p-1 text-slate-500 transition-colors hover:bg-white" type="button">
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .slice(Math.max(currentPage - 3, 0), Math.min(Math.max(currentPage - 3, 0) + 5, totalPages))
+              .map((pageNumber) => (
+                <button key={pageNumber} className={`flex h-8 w-8 items-center justify-center rounded text-xs font-bold ${pageNumber === currentPage ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white'}`} type="button" onClick={() => setCurrentPage(pageNumber)}>
+                  {pageNumber}
+                </button>
+              ))}
+            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30 hover:bg-white" type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}>
               <MaterialIcon className="text-[20px]">chevron_right</MaterialIcon>
             </button>
           </div>
