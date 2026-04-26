@@ -9,6 +9,7 @@ import { BooksPhase1, BookFormPhase1 } from './pages/BooksPhase1';
 import DashboardPhase1 from './pages/DashboardPhase1';
 import OrdersPage from './pages/OrdersPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import SettingsPage from './pages/SettingsPage';
 import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -354,6 +355,10 @@ function App() {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken('');
     window.location.href = USER_APP_LOGIN_URL;
+  };
+
+  const handleAdminProfileUpdated = (updatedProfile) => {
+    setAdminUser(updatedProfile);
   };
 
   const handleCreateUser = async (payload) => {
@@ -760,7 +765,7 @@ function App() {
   } else if (page === 'reports') {
     content = <PlaceholderPage title="Báo cáo" description="" />;
   } else if (page === 'settings') {
-    content = <PlaceholderPage title="Cài đặt" description="" />;
+    content = <SettingsPage adminUser={adminUser} token={token} onProfileUpdated={handleAdminProfileUpdated} />;
   }
 
   return (

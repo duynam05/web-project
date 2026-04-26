@@ -90,6 +90,12 @@ public class UserService {
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
         }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getTwoFactorEnabled() != null) {
+            user.setTwoFactorEnabled(request.getTwoFactorEnabled());
+        }
 
         return userMapper.toUserResponse(userRepository.save(user));
     }

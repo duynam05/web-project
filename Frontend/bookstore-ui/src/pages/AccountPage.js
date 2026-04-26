@@ -258,6 +258,7 @@ const AccountPage = () => {
           <div className="text-center mb-6">
             <img
               src={resolveAvatarUrl(profile.avatar || user.avatar)}
+              alt={profile.fullName || 'Ảnh đại diện'}
               className="w-24 h-24 mx-auto rounded-full object-cover border"
               onError={(e) => {
                 e.currentTarget.src = DEFAULT_AVATAR_URL;

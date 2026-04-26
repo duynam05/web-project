@@ -17,6 +17,7 @@ import com.duynam.identityservice.exception.AppException;
 import com.duynam.identityservice.exception.ErrorCode;
 import com.duynam.identityservice.repository.RoleRepository;
 import com.duynam.identityservice.repository.UserRepository;
+import com.duynam.identityservice.service.SystemSettingsService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class ApplicationInitConfig {
 
     BootstrapAdminProperties bootstrapAdminProperties;
     PasswordEncoder passwordEncoder;
+    SystemSettingsService systemSettingsService;
 
     @Bean
     @ConditionalOnProperty(
@@ -43,6 +45,7 @@ public class ApplicationInitConfig {
             ensureRoleExists(roleRepository, PredefinedRole.USER_ROLE, "User role");
             ensureRoleExists(roleRepository, PredefinedRole.ADMIN_ROLE, "Admin role");
             backfillMissingUserStatus(userRepository);
+            systemSettingsService.ensureDefaultSettings();
 
             if (!bootstrapAdminProperties.isEnabled()) {
                 log.info("Admin bootstrap is disabled");
@@ -64,6 +67,8 @@ public class ApplicationInitConfig {
                         .email(bootstrapAdminProperties.getEmail())
                         .password(passwordEncoder.encode(bootstrapAdminProperties.getPassword()))
                         .fullName(bootstrapAdminProperties.getFullName())
+                        .bio("")
+                        .twoFactorEnabled(false)
                         .status(UserStatus.ACTIVE)
                         .roles(roles)
                         .build();

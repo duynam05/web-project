@@ -31,6 +31,8 @@ public class User {
     LocalDate dob;
     String phone;
     String address;
+    String bio;
+    Boolean twoFactorEnabled;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

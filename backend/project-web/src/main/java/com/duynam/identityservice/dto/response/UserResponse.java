@@ -19,6 +19,8 @@ public class UserResponse {
     LocalDate dob;
     String phone;
     String address;
+    String bio;
+    Boolean twoFactorEnabled;
     UserStatus status;
     Set<RoleResponse> roles;
 }

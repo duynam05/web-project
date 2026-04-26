@@ -13,6 +13,8 @@ public class UpdateMyInfoRequest {
     String fullName;
     String phone;
     String address;
+    String bio;
+    Boolean twoFactorEnabled;
     String password; // optional
 }
 
