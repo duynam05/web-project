@@ -5,7 +5,7 @@ export const API_BASE_URL =
 
 export const ADMIN_APP_URL =
   process.env.REACT_APP_ADMIN_APP_URL ||
-  "http://localhost:5173";
+  "https://duynam05.github.io/web-project/admin/";
 
 export const DEFAULT_AVATAR_URL = "/default-avatar.svg";
 

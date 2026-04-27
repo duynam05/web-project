@@ -38,6 +38,9 @@ public enum ErrorCode {
     ORDER_CANNOT_BE_CANCELLED(1028, "Order cannot be cancelled at its current status", HttpStatus.BAD_REQUEST),
     INVALID_ORDER_STATUS(1029, "Order status is invalid", HttpStatus.BAD_REQUEST),
     ORDER_STATUS_TRANSITION_NOT_ALLOWED(1030, "Order status transition is not allowed", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(1031, "Review not found", HttpStatus.NOT_FOUND),
+    INVALID_REVIEW_STATUS(1032, "Review status is invalid", HttpStatus.BAD_REQUEST),
+    REVIEW_ALREADY_EXISTS(1033, "Review already exists for this book", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

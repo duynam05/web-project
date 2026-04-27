@@ -2,7 +2,9 @@
   "name": "bookstore-ui",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://duynam05.github.io/web-project",
   "dependencies": {
+    "gh-pages": "^6.3.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.292.0",
     "react": "^18.2.0",
@@ -14,6 +16,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

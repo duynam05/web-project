@@ -9,6 +9,7 @@ import { BooksPhase1, BookFormPhase1 } from './pages/BooksPhase1';
 import DashboardPhase1 from './pages/DashboardPhase1';
 import OrdersPage from './pages/OrdersPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import ReviewsPage from './pages/ReviewsPage';
 import SettingsPage from './pages/SettingsPage';
 import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
 
@@ -88,6 +89,16 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
             </button>
           );
         })}
+        <button
+          className={`flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+            currentPage === 'reviews' ? 'rounded-lg bg-blue-50/50 font-semibold text-blue-600' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+          type="button"
+          onClick={() => onNavigate('reviews')}
+        >
+          <MaterialIcon fill={currentPage === 'reviews'}>reviews</MaterialIcon>
+          <span>Đánh giá</span>
+        </button>
       </nav>
 
       <div className="border-t border-slate-200 p-4">
@@ -197,6 +208,7 @@ function App() {
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [orderSearch, setOrderSearch] = useState('');
+  const [reviewSearch, setReviewSearch] = useState('');
 
   useEffect(() => {
     const nextToken = extractTokenFromUrl();
@@ -762,6 +774,8 @@ function App() {
         onUpdateStatus={handleUpdateOrderStatus}
       />
     );
+  } else if (page === 'reviews') {
+    content = <ReviewsPage token={token} searchValue={reviewSearch} />;
   } else if (page === 'reports') {
     content = <PlaceholderPage title="Báo cáo" description="" />;
   } else if (page === 'settings') {
@@ -774,8 +788,8 @@ function App() {
       <TopBar
         currentPage={page}
         adminUser={adminUser}
-        searchValue={page === 'dashboard' ? dashboardSearch : page === 'books' ? bookSearch : page === 'users' ? userSearch : page === 'orders' ? orderSearch : ''}
-        onSearchChange={page === 'dashboard' ? setDashboardSearch : page === 'books' ? setBookSearch : page === 'users' ? setUserSearch : page === 'orders' ? setOrderSearch : () => {}}
+        searchValue={page === 'dashboard' ? dashboardSearch : page === 'books' ? bookSearch : page === 'users' ? userSearch : page === 'orders' ? orderSearch : page === 'reviews' ? reviewSearch : ''}
+        onSearchChange={page === 'dashboard' ? setDashboardSearch : page === 'books' ? setBookSearch : page === 'users' ? setUserSearch : page === 'orders' ? setOrderSearch : page === 'reviews' ? setReviewSearch : () => {}}
       />
       {content}
     </div>
