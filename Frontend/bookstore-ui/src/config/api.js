@@ -1,7 +1,7 @@
 export const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   process.env.REACT_APP_API_URL ||
-  "http://localhost:8080";
+  "https://web-project-2-viwf.onrender.com";
 
 export const ADMIN_APP_URL =
   process.env.REACT_APP_ADMIN_APP_URL ||
