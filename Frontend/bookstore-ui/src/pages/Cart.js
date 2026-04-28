@@ -15,7 +15,6 @@ const Cart = () => {
   const { fetchCart, removeFromCartSuccess, updateCartSuccess } = useCartActions();
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
-  const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
   // useEffect(() => {
@@ -26,7 +25,7 @@ const Cart = () => {
     if (user && token) {
       fetchCart();
     }
-  }, [user, token]);
+  }, [fetchCart, token, user]);
 
   const removeFromCart = async (id) => {
     const currentToken = localStorage.getItem("token");

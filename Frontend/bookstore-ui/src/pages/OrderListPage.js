@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { buildApiUrl } from "../config/api";
 import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 
 const statusColor = {
   PENDING: "text-yellow-600",

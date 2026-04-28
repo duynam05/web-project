@@ -1,6 +1,6 @@
 import './App.css';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import MaterialIcon from './components/MaterialIcon';
 import { USER_APP_LOGIN_URL } from './config/api';
@@ -283,7 +283,7 @@ function App() {
     setPage(nextPage);
   };
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     setUsersError('');
     try {
@@ -295,9 +295,9 @@ function App() {
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, [token]);
 
-  const loadBooks = async () => {
+  const loadBooks = useCallback(async () => {
     setBooksLoading(true);
     setBooksError('');
     try {
@@ -308,9 +308,9 @@ function App() {
     } finally {
       setBooksLoading(false);
     }
-  };
+  }, [token]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
     setOrdersError('');
     try {
@@ -325,7 +325,7 @@ function App() {
     } finally {
       setOrdersLoading(false);
     }
-  };
+  }, [token]);
 
   const resetBookFilters = () => {
     setBookSearch('');
@@ -361,7 +361,7 @@ function App() {
     loadUsers();
     loadBooks();
     loadOrders();
-  }, [authStatus]);
+  }, [authStatus, loadBooks, loadOrders, loadUsers]);
 
   const handleLogout = () => {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -686,6 +686,7 @@ function App() {
   } else if (page === 'book-create') {
     content = (
       <BookFormPhase1
+        key="book-create"
         mode="create"
         submitting={submittingBook}
         uploadLoading={uploadLoading}
@@ -698,6 +699,7 @@ function App() {
   } else if (page === 'book-edit') {
     content = (
       <BookFormPhase1
+        key={`book-edit:${editingBook?.id || 'none'}`}
         mode="edit"
         book={editingBook}
         submitting={submittingBook}
@@ -738,6 +740,7 @@ function App() {
   } else if (page === 'user-create') {
     content = (
       <UserFormPhase1
+        key="user-create"
         mode="create"
         roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]}
         submitting={submittingUser}
@@ -749,6 +752,7 @@ function App() {
   } else if (page === 'user-edit') {
     content = (
       <UserFormPhase1
+        key={`user-edit:${editingUser?.id || 'none'}`}
         mode="edit"
         user={editingUser}
         roles={roles.length ? roles : [{ name: 'USER' }, { name: 'ADMIN' }]}

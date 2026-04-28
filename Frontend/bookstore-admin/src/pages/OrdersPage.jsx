@@ -247,7 +247,8 @@ export default function OrdersPage({
   }, [orders, paymentStatusFilter, searchValue, sortBy, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
-  const paginatedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedOrders = filteredOrders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
   const pendingCount = orders.filter((order) => order.status === 'PENDING' || order.status === 'PENDING_PAYMENT').length;
   const shippingCount = orders.filter((order) => order.status === 'SHIPPING').length;
   const revenue = orders.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
@@ -256,10 +257,6 @@ export default function OrdersPage({
     if (!selectedOrder || detailLoading) return;
     detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [selectedOrder, detailLoading]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredOrders.length]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -298,8 +295,8 @@ export default function OrdersPage({
     await onRefresh();
   };
 
-  const startIndex = filteredOrders.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
-  const endIndex = Math.min(currentPage * PAGE_SIZE, filteredOrders.length);
+  const startIndex = filteredOrders.length ? (safeCurrentPage - 1) * PAGE_SIZE + 1 : 0;
+  const endIndex = Math.min(safeCurrentPage * PAGE_SIZE, filteredOrders.length);
 
   return (
     <main className="ml-64 min-h-screen p-8">
@@ -490,17 +487,17 @@ export default function OrdersPage({
             Hiển thị {startIndex} - {endIndex} của {filteredOrders.length} đơn hàng
           </p>
           <div className="flex items-center gap-1">
-            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}>
+            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30" type="button" disabled={safeCurrentPage === 1} onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}>
               <MaterialIcon className="text-[20px]">chevron_left</MaterialIcon>
             </button>
             {Array.from({ length: totalPages }, (_, index) => index + 1)
-              .slice(Math.max(currentPage - 3, 0), Math.min(Math.max(currentPage - 3, 0) + 5, totalPages))
+              .slice(Math.max(safeCurrentPage - 3, 0), Math.min(Math.max(safeCurrentPage - 3, 0) + 5, totalPages))
               .map((pageNumber) => (
-                <button key={pageNumber} className={`flex h-8 w-8 items-center justify-center rounded text-xs font-bold ${pageNumber === currentPage ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white'}`} type="button" onClick={() => setCurrentPage(pageNumber)}>
+                <button key={pageNumber} className={`flex h-8 w-8 items-center justify-center rounded text-xs font-bold ${pageNumber === safeCurrentPage ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white'}`} type="button" onClick={() => setCurrentPage(pageNumber)}>
                   {pageNumber}
                 </button>
               ))}
-            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30 hover:bg-white" type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}>
+            <button className="rounded p-1 text-slate-500 transition-colors disabled:opacity-30 hover:bg-white" type="button" disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}>
               <MaterialIcon className="text-[20px]">chevron_right</MaterialIcon>
             </button>
           </div>

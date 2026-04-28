@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
 
@@ -37,10 +37,6 @@ export function BooksPhase1({
   onStockChange,
 }) {
   const [currentPage, setCurrentPage] = useState(0);
-
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [books.length, selectedCategory, selectedStock]);
 
   const totalPages = Math.max(1, Math.ceil(books.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
@@ -229,23 +225,19 @@ export function BooksPhase1({
 
 export function BookFormPhase1({ mode, book, submitting, uploadLoading, error, onCancel, onSubmit, onUploadImage }) {
   const defaultForm = { title: '', author: '', category: '', price: '0', stock: '0', rating: '0', image: '' };
-  const [form, setForm] = useState(defaultForm);
-
-  useEffect(() => {
-    if (mode === 'edit' && book) {
-      setForm({
-        title: book.title || '',
-        author: book.author || '',
-        category: book.category || '',
-        price: String(book.price ?? 0),
-        stock: String(book.stock ?? 0),
-        rating: String(book.rating ?? 0),
-        image: book.image || '',
-      });
-      return;
-    }
-    setForm(defaultForm);
-  }, [mode, book]);
+  const [form, setForm] = useState(() => (
+    mode === 'edit' && book
+      ? {
+          title: book.title || '',
+          author: book.author || '',
+          category: book.category || '',
+          price: String(book.price ?? 0),
+          stock: String(book.stock ?? 0),
+          rating: String(book.rating ?? 0),
+          image: book.image || '',
+        }
+      : defaultForm
+  ));
 
   const handleSubmit = (event) => {
     event.preventDefault();

@@ -129,11 +129,17 @@ function aggregateRevenueByMonth(orders) {
 function DashboardPhase1({ books, users, orders, loading, searchValue, onRefresh, onNavigate }) {
   const [chartPeriod, setChartPeriod] = useState('week');
 
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 30);
-  const sixtyDaysAgo = new Date(now);
-  sixtyDaysAgo.setDate(now.getDate() - 60);
+  const { thirtyDaysAgo, sixtyDaysAgo } = useMemo(() => {
+    const now = new Date();
+    const nextThirtyDaysAgo = new Date(now);
+    nextThirtyDaysAgo.setDate(now.getDate() - 30);
+    const nextSixtyDaysAgo = new Date(now);
+    nextSixtyDaysAgo.setDate(now.getDate() - 60);
+    return {
+      thirtyDaysAgo: nextThirtyDaysAgo,
+      sixtyDaysAgo: nextSixtyDaysAgo,
+    };
+  }, []);
 
   const currentOrders = useMemo(
     () => orders.filter((order) => {

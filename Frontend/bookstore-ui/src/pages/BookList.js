@@ -102,6 +102,7 @@ const BookList = () => {
   const searchParamsString = searchParams.toString();
 
   useEffect(() => {
+    const currentParams = new URLSearchParams(searchParamsString);
     const nextParams = new URLSearchParams();
 
     if (debouncedSearchTerm) {
@@ -116,9 +117,9 @@ const BookList = () => {
       nextParams.set('sort', sortBy);
     }
 
-    const currentQ = searchParams.get('q') || '';
-    const currentCategory = searchParams.get('category') || 'All';
-    const currentSort = searchParams.get('sort') || 'popular';
+    const currentQ = currentParams.get('q') || '';
+    const currentCategory = currentParams.get('category') || 'All';
+    const currentSort = currentParams.get('sort') || 'popular';
 
     if (
       debouncedSearchTerm !== currentQ ||

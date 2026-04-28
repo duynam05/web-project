@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
 
@@ -48,10 +48,6 @@ export function UsersPhase1({
   onRefresh,
 }) {
   const [currentPage, setCurrentPage] = useState(0);
-
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [users.length, selectedRole, selectedStatus]);
 
   const activeCount = users.filter((user) => user.status === 'ACTIVE').length;
   const adminCount = users.filter((user) => user.roles?.some((role) => role.name === 'ADMIN')).length;
@@ -221,22 +217,17 @@ export function UsersPhase1({
 }
 
 export function UserFormPhase1({ mode, user, roles, submitting, error, onCancel, onSubmit }) {
-  const [form, setForm] = useState({ email: '', password: '', fullName: '', roles: ['USER'], status: 'ACTIVE' });
-
-  useEffect(() => {
-    if (mode === 'edit' && user) {
-      setForm({
-        email: user.email || '',
-        password: '',
-        fullName: user.fullName || '',
-        roles: user.roles?.map((role) => role.name) || ['USER'],
-        status: user.status || 'ACTIVE',
-      });
-      return;
-    }
-
-    setForm({ email: '', password: '', fullName: '', roles: ['USER'], status: 'ACTIVE' });
-  }, [mode, user]);
+  const [form, setForm] = useState(() => (
+    mode === 'edit' && user
+      ? {
+          email: user.email || '',
+          password: '',
+          fullName: user.fullName || '',
+          roles: user.roles?.map((role) => role.name) || ['USER'],
+          status: user.status || 'ACTIVE',
+        }
+      : { email: '', password: '', fullName: '', roles: ['USER'], status: 'ACTIVE' }
+  ));
 
   const handleSubmit = (event) => {
     event.preventDefault();

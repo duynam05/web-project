@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { buildApiUrl } from '../config/api';
 
 const AuthContext = createContext();
@@ -9,21 +9,29 @@ export const AuthProvider = ({ children }) => {
   const [token, setTokenState] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  const setToken = (t) => {
+  const setToken = useCallback((t) => {
     setTokenState(t);
 
     if (t) localStorage.setItem("token", t);
     else localStorage.removeItem("token");
-  };
+  }, []);
 
-  const login = (userData, token) => {
+  const login = useCallback((userData, token) => {
     setUser(userData);
     setToken(token);
 
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-  };
+  }, [setToken]);
 
-  const fetchMe = async (token) => {
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
+
+    window.dispatchEvent(new Event("logout"));
+  }, [setToken]);
+
+  const fetchMe = useCallback(async (token) => {
     try {
       const res = await fetch(buildApiUrl('/users/my-info'), {
         headers: {
@@ -48,15 +56,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem(USER_STORAGE_KEY);
-
-    window.dispatchEvent(new Event("logout"));
-  };
+  }, [logout]);
 
   useEffect(() => {
     if (token) {
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, [token]);
+  }, [fetchMe, token]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>

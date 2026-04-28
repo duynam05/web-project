@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, BookOpen, LogIn, Search, Package } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { ShoppingCart, BookOpen, LogIn, Package } from 'lucide-react';
 
 import Home from './pages/Home';
 import BookList from './pages/BookList';
@@ -28,10 +28,6 @@ const Navbar = () => {
   const { cartItemCount } = useCartState();
   const { fetchCart } = useCartActions();
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  // const totalItems = cart?.totalItems || 0;
-  const [searchInput, setSearchInput] = useState('');
 
   const initialsOf = (value = '') =>
     value
@@ -42,36 +38,10 @@ const Navbar = () => {
       .join('') || 'US';
 
   useEffect(() => {
-    if (location.pathname === '/books') {
-      const params = new URLSearchParams(location.search);
-      setSearchInput(params.get('q') || '');
-      return;
-    }
-
-    setSearchInput('');
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
     if (user) {
       fetchCart();
     }
   }, [user, fetchCart]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-
-    const params = new URLSearchParams();
-    const keyword = searchInput.trim();
-
-    if (keyword) {
-      params.set('q', keyword);
-    }
-
-    navigate({
-      pathname: '/books',
-      search: params.toString() ? `?${params.toString()}` : ''
-    });
-  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow">

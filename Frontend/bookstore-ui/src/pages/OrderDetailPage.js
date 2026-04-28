@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { buildApiUrl } from "../config/api";
-import { useAuth } from "../contexts/AuthContext";
 
 const ORDER_STATUS_VI = {
     PENDING: "Chờ xử lý",
