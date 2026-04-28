@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { useAuth } from '../contexts/AuthContext';
-import { buildApiUrl, DEFAULT_AVATAR_URL, resolveAvatarUrl } from '../config/api';
+import { buildApiUrl } from '../config/api';
 
 const PHONE_REGEX = /^0\d{9}$/;
 
@@ -37,8 +37,15 @@ const AccountPage = () => {
     newPassword: false,
     confirmPassword: false,
   });
-
   const isPhoneInvalid = form.phone && !PHONE_REGEX.test(form.phone);
+
+  const initialsOf = (value = '') =>
+    value
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'US';
 
   const togglePwdField = (field) => {
     setShowPwdFields((current) => ({ ...current, [field]: !current[field] }));
@@ -116,8 +123,8 @@ const AccountPage = () => {
     fetchProfile();
   }, [user, authLoading, fetchProfile, navigate]);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const handleSave = async (event) => {
+    event.preventDefault();
 
     if (!form.phone || form.phone.trim() === '') {
       toast.error('Số điện thoại là bắt buộc');
@@ -164,8 +171,8 @@ const AccountPage = () => {
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
 
     if (!validatePasswordForm()) return;
 
@@ -256,14 +263,9 @@ const AccountPage = () => {
 
         <div className="bg-white rounded-2xl shadow-md p-6">
           <div className="text-center mb-6">
-            <img
-              src={resolveAvatarUrl(profile.avatar || user.avatar)}
-              alt={profile.fullName || 'Ảnh đại diện'}
-              className="w-24 h-24 mx-auto rounded-full object-cover border"
-              onError={(e) => {
-                e.currentTarget.src = DEFAULT_AVATAR_URL;
-              }}
-            />
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-2xl font-bold text-blue-700 shadow-sm">
+              {initialsOf(profile.fullName || profile.email)}
+            </div>
 
             <h2 className="mt-3 font-semibold text-lg">{profile.fullName}</h2>
             <p className="text-gray-500 text-sm">{profile.email}</p>
@@ -273,7 +275,7 @@ const AccountPage = () => {
             <form onSubmit={handleSave} className="space-y-4">
               <input
                 value={form.fullName}
-                onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
                 className="w-full border p-2 rounded-lg"
                 placeholder="Họ tên"
               />
@@ -281,10 +283,8 @@ const AccountPage = () => {
               <div>
                 <input
                   value={form.phone}
-                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                  className={`w-full border p-2 rounded-lg ${
-                    isPhoneInvalid ? 'border-red-500' : ''
-                  }`}
+                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                  className={`w-full border p-2 rounded-lg ${isPhoneInvalid ? 'border-red-500' : ''}`}
                   placeholder="Số điện thoại"
                 />
 
@@ -297,7 +297,7 @@ const AccountPage = () => {
 
               <input
                 value={form.address}
-                onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
                 className="w-full border p-2 rounded-lg"
                 placeholder="Địa chỉ"
               />
@@ -358,10 +358,8 @@ const AccountPage = () => {
                         ref={inputRefs.currentPassword}
                         type={showPwdFields.currentPassword ? 'text' : 'password'}
                         value={pwd.currentPassword}
-                        onChange={(e) => setPwd({ ...pwd, currentPassword: e.target.value })}
-                        className={`w-full border p-2 pr-10 rounded-lg ${
-                          errors.currentPassword ? 'border-red-500' : ''
-                        }`}
+                        onChange={(event) => setPwd({ ...pwd, currentPassword: event.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${errors.currentPassword ? 'border-red-500' : ''}`}
                         placeholder="Mật khẩu hiện tại"
                       />
                       <button
@@ -385,10 +383,8 @@ const AccountPage = () => {
                         ref={inputRefs.newPassword}
                         type={showPwdFields.newPassword ? 'text' : 'password'}
                         value={pwd.newPassword}
-                        onChange={(e) => setPwd({ ...pwd, newPassword: e.target.value })}
-                        className={`w-full border p-2 pr-10 rounded-lg ${
-                          errors.newPassword ? 'border-red-500' : ''
-                        }`}
+                        onChange={(event) => setPwd({ ...pwd, newPassword: event.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${errors.newPassword ? 'border-red-500' : ''}`}
                         placeholder="Mật khẩu mới"
                       />
                       <button
@@ -412,10 +408,8 @@ const AccountPage = () => {
                         ref={inputRefs.confirmPassword}
                         type={showPwdFields.confirmPassword ? 'text' : 'password'}
                         value={pwd.confirmPassword}
-                        onChange={(e) => setPwd({ ...pwd, confirmPassword: e.target.value })}
-                        className={`w-full border p-2 pr-10 rounded-lg ${
-                          errors.confirmPassword ? 'border-red-500' : ''
-                        }`}
+                        onChange={(event) => setPwd({ ...pwd, confirmPassword: event.target.value })}
+                        className={`w-full border p-2 pr-10 rounded-lg ${errors.confirmPassword ? 'border-red-500' : ''}`}
                         placeholder="Xác nhận mật khẩu"
                       />
                       <button

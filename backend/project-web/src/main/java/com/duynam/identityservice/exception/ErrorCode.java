@@ -41,6 +41,7 @@ public enum ErrorCode {
     REVIEW_NOT_FOUND(1031, "Review not found", HttpStatus.NOT_FOUND),
     INVALID_REVIEW_STATUS(1032, "Review status is invalid", HttpStatus.BAD_REQUEST),
     REVIEW_ALREADY_EXISTS(1033, "Review already exists for this book", HttpStatus.BAD_REQUEST),
+    REVIEW_PERMISSION_DENIED(1034, "You do not have permission to modify this review", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

@@ -16,7 +16,6 @@ import {
 } from './contexts/CartContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { resolveAvatarUrl, DEFAULT_AVATAR_URL } from './config/api';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CheckoutPage from './pages/CheckoutPage';
@@ -33,6 +32,14 @@ const Navbar = () => {
   const location = useLocation();
   // const totalItems = cart?.totalItems || 0;
   const [searchInput, setSearchInput] = useState('');
+
+  const initialsOf = (value = '') =>
+    value
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'US';
 
   useEffect(() => {
     if (location.pathname === '/books') {
@@ -107,16 +114,9 @@ const Navbar = () => {
 
           {user ? (
             <Link to="/account" className="group flex items-center gap-2 hover:text-blue-600">
-              <img
-                src={resolveAvatarUrl(user.avatar)}
-                alt="User"
-                className="h-8 w-8 rounded-full border border-gray-200 object-cover"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = DEFAULT_AVATAR_URL;
-                }}
-              />
-              <span className="hidden max-w-[100px] truncate xl:block">{user.name}</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-bold text-blue-700 shadow-sm">
+                {initialsOf(user.fullName || user.name || user.email)}
+              </div>
             </Link>
           ) : (
             <Link to="/login" className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700">

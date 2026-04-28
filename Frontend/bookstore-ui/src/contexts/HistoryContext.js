@@ -1,27 +1,33 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 const HistoryContext = createContext();
 
 export const HistoryProvider = ({ children }) => {
-  // Lưu danh mục người dùng đã xem
   const [viewedCategories, setViewedCategories] = useState(() => {
     const saved = localStorage.getItem('viewedCategories');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const addToHistory = (category) => {
-    if (!viewedCategories.includes(category)) {
-      const newHistory = [category, ...viewedCategories].slice(0, 5); // Chỉ giữ 5 danh mục gần nhất
-      setViewedCategories(newHistory);
-      localStorage.setItem('viewedCategories', JSON.stringify(newHistory));
-    }
-  };
+  const addToHistory = useCallback((category) => {
+    if (!category) return;
 
-  return (
-    <HistoryContext.Provider value={{ viewedCategories, addToHistory }}>
-      {children}
-    </HistoryContext.Provider>
+    setViewedCategories((current) => {
+      if (current.includes(category)) {
+        return current;
+      }
+
+      const next = [category, ...current].slice(0, 5);
+      localStorage.setItem('viewedCategories', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const value = useMemo(
+    () => ({ viewedCategories, addToHistory }),
+    [viewedCategories, addToHistory],
   );
+
+  return <HistoryContext.Provider value={value}>{children}</HistoryContext.Provider>;
 };
 
 export const useHistory = () => useContext(HistoryContext);

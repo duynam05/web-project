@@ -1,10 +1,7 @@
 package com.duynam.identityservice.entity;
 
-import com.duynam.identityservice.constant.ReviewStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,54 +21,36 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "review")
+@Table(name = "review_reply")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Review {
+public class ReviewReply {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
+    @JoinColumn(name = "review_id", nullable = false)
+    private Review review;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_reply_id")
+    private ReviewReply parentReply;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private Integer rating;
-
     @Column(nullable = false, length = 2000)
     private String content;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private ReviewStatus status = ReviewStatus.APPROVED;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean verifiedPurchase = false;
-
-    @Column(length = 2000)
-    private String adminReply;
-
-    @Column(length = 2000)
-    private String customerReply;
 
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
-
-    private LocalDateTime repliedAt;
-
-    private LocalDateTime customerRepliedAt;
 
     @PrePersist
     public void prePersist() {

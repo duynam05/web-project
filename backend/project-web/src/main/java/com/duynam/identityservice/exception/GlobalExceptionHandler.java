@@ -6,6 +6,8 @@ import java.util.Objects;
 import jakarta.validation.ConstraintViolation;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -70,6 +72,28 @@ public class GlobalExceptionHandler {
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
                         .build());
+    }
+
+    @ExceptionHandler(value = DataIntegrityViolationException.class)
+    ResponseEntity<ApiResponse> handlingDataIntegrityViolation(DataIntegrityViolationException exception) {
+        log.error("Data integrity violation: ", exception);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(ErrorCode.DATABASE_ERROR.getCode());
+        apiResponse.setMessage("Database constraint error. Review schema may be outdated or duplicate data is blocked by an old unique key.");
+
+        return ResponseEntity.status(ErrorCode.DATABASE_ERROR.getStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = InvalidDataAccessResourceUsageException.class)
+    ResponseEntity<ApiResponse> handlingInvalidDataAccessResourceUsage(InvalidDataAccessResourceUsageException exception) {
+        log.error("Invalid data access resource usage: ", exception);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(ErrorCode.DATABASE_ERROR.getCode());
+        apiResponse.setMessage("Database schema is missing required review columns. Run the latest review SQL patch.");
+
+        return ResponseEntity.status(ErrorCode.DATABASE_ERROR.getStatusCode()).body(apiResponse);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)

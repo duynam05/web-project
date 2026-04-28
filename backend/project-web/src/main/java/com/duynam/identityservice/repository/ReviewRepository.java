@@ -16,8 +16,6 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     @EntityGraph(attributePaths = {"book", "user"})
     List<Review> findByBookIdAndStatusOrderByCreatedAtDesc(UUID bookId, ReviewStatus status);
 
-    boolean existsByBookIdAndUserId(UUID bookId, String userId);
-
     @EntityGraph(attributePaths = {"book", "user"})
     Optional<Review> findWithBookAndUserById(UUID id);
 }

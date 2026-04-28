@@ -16,23 +16,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ReviewResponse {
+public class ReviewReplyResponse {
     UUID id;
-    UUID bookId;
-    String title;
-    String author;
-    String category;
-    String image;
-    String reviewerId;
-    String reviewer;
-    Integer rating;
+    String userId;
+    String userName;
+    UUID parentReplyId;
     String content;
-    String status;
-    Boolean verifiedPurchase;
-    String adminReply;
-    String customerReply;
-    List<ReviewReplyResponse> replies;
     LocalDateTime createdAt;
-    LocalDateTime repliedAt;
-    LocalDateTime customerRepliedAt;
+    List<ReviewReplyResponse> replies;
 }
