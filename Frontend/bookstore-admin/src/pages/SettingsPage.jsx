@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
 import { apiRequest } from '../lib/apiClient';
@@ -620,3 +620,4 @@ function SettingsPage({ adminUser, token, onProfileUpdated }) {
 }
 
 export default SettingsPage;
+

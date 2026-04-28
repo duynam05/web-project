@@ -16,12 +16,12 @@ import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
 const TOKEN_STORAGE_KEY = 'admin_token';
 
 const pages = [
-  { key: 'dashboard', label: 'BĂ¡ÂºÂ£ng Ă„â€˜iĂ¡Â»Âu khiĂ¡Â»Æ’n', icon: 'dashboard' },
-  { key: 'books', label: 'SÄ‚Â¡ch', icon: 'book' },
-  { key: 'users', label: 'NgĂ†Â°Ă¡Â»Âi dÄ‚Â¹ng', icon: 'group' },
-  { key: 'orders', label: 'Ă„ÂĂ†Â¡n hÄ‚Â ng', icon: 'shopping_cart' },
-  { key: 'reports', label: 'BÄ‚Â¡o cÄ‚Â¡o', icon: 'analytics' },
-  { key: 'settings', label: 'CÄ‚Â i Ă„â€˜Ă¡ÂºÂ·t', icon: 'settings' },
+  { key: 'dashboard', label: 'Bảng điều khiển', icon: 'dashboard' },
+  { key: 'books', label: 'Sách', icon: 'book' },
+  { key: 'users', label: 'Người dùng', icon: 'group' },
+  { key: 'orders', label: 'Đơn hàng', icon: 'shopping_cart' },
+  { key: 'reports', label: 'Báo cáo', icon: 'analytics' },
+  { key: 'settings', label: 'Cài đặt', icon: 'settings' },
 ];
 
 function getPageFromHash() {
@@ -39,7 +39,7 @@ function extractTokenFromUrl() {
 }
 
 function formatError(error) {
-  return error instanceof Error ? error.message : 'CÄ‚Â³ lĂ¡Â»â€”i xĂ¡ÂºÂ£y ra';
+  return error instanceof Error ? error.message : 'Có lỗi xảy ra';
 }
 
 function initialsOf(value = '') {
@@ -59,7 +59,7 @@ function normalizeText(value) {
 }
 
 function SideNav({ currentPage, onNavigate, onLogout }) {
-  const subtitle = 'HĂ¡Â»â€¡ thĂ¡Â»â€˜ng quĂ¡ÂºÂ£n lÄ‚Â½ sÄ‚Â¡ch';
+  const subtitle = 'Hệ thống quản lý sách';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-slate-50 font-['Inter'] antialiased tracking-tight">
@@ -97,14 +97,14 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
           onClick={() => onNavigate('reviews')}
         >
           <MaterialIcon fill={currentPage === 'reviews'}>reviews</MaterialIcon>
-          <span>Ă„ÂÄ‚Â¡nh giÄ‚Â¡</span>
+          <span>Đánh giá</span>
         </button>
       </nav>
 
       <div className="border-t border-slate-200 p-4">
         <button className="flex w-full items-center gap-3 px-4 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900" type="button" onClick={onLogout}>
           <MaterialIcon>logout</MaterialIcon>
-          <span>Ă„ÂĂ„Æ’ng xuĂ¡ÂºÂ¥t</span>
+          <span>Đăng xuất</span>
         </button>
       </div>
     </aside>
@@ -114,14 +114,14 @@ function SideNav({ currentPage, onNavigate, onLogout }) {
 function TopBar({ currentPage, adminUser, searchValue, onSearchChange }) {
   const placeholder =
     currentPage === 'dashboard'
-      ? 'TÄ‚Â¬m kiĂ¡ÂºÂ¿m sÄ‚Â¡ch, Ă„â€˜Ă†Â¡n hÄ‚Â ng...'
+      ? 'Tìm kiếm sách, đơn hàng...'
       : currentPage === 'books'
-        ? 'TÄ‚Â¬m kiĂ¡ÂºÂ¿m sÄ‚Â¡ch, tÄ‚Â¡c giĂ¡ÂºÂ£ hoĂ¡ÂºÂ·c ISBN...'
+        ? 'Tìm kiếm sách, tác giả hoặc ISBN...'
         : currentPage === 'users'
-          ? 'TÄ‚Â¬m kiĂ¡ÂºÂ¿m ngĂ†Â°Ă¡Â»Âi dÄ‚Â¹ng...'
+          ? 'Tìm kiếm người dùng...'
           : currentPage === 'orders'
-            ? 'TÄ‚Â¬m kiĂ¡ÂºÂ¿m Ă„â€˜Ă†Â¡n hÄ‚Â ng...'
-            : 'TÄ‚Â¬m kiĂ¡ÂºÂ¿m trong hĂ¡Â»â€¡ thĂ¡Â»â€˜ng...';
+            ? 'Tìm kiếm đơn hàng...'
+            : 'Tìm kiếm trong hệ thống...';
 
   return (
     <header className="sticky top-0 right-0 z-30 ml-64 flex h-16 items-center justify-between border-b border-slate-100 bg-white/80 px-8 shadow-sm backdrop-blur-md">
@@ -157,15 +157,15 @@ function TopBar({ currentPage, adminUser, searchValue, onSearchChange }) {
 }
 
 function AuthGate({ status, authError, onGoLogin }) {
-  const title = status === 'unauthorized' ? 'KhÄ‚Â´ng cÄ‚Â³ quyĂ¡Â»Ân truy cĂ¡ÂºÂ­p' : 'CĂ¡ÂºÂ§n Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p quĂ¡ÂºÂ£n trĂ¡Â»â€¹';
+  const title = status === 'unauthorized' ? 'Không có quyền truy cập' : 'Cần đăng nhập quản trị';
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),transparent_28%),linear-gradient(180deg,_#eff6ff_0%,_#f8fafc_100%)] p-6">
       <div className="mx-auto mt-28 w-full max-w-xl rounded-3xl bg-white/95 p-8 shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">{authError || 'Vui lÄ‚Â²ng Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p bĂ¡ÂºÂ±ng tÄ‚Â i khoĂ¡ÂºÂ£n ADMIN tĂ¡Â»Â« giao diĂ¡Â»â€¡n ngĂ†Â°Ă¡Â»Âi dÄ‚Â¹ng.'}</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{authError || 'Vui lòng đăng nhập bằng tài khoản ADMIN từ giao diện người dùng.'}</p>
         <button className="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700" type="button" onClick={onGoLogin}>
-          Ă„Âi tĂ¡Â»â€ºi Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p
+          Đi tới đăng nhập
         </button>
       </div>
     </div>
@@ -248,7 +248,7 @@ function App() {
           if (active) {
             setToken('');
             setAuthStatus('unauthorized');
-            setAuthError('TÄ‚Â i khoĂ¡ÂºÂ£n hiĂ¡Â»â€¡n tĂ¡ÂºÂ¡i khÄ‚Â´ng cÄ‚Â³ quyĂ¡Â»Ân ADMIN.');
+            setAuthError('Tài khoản hiện tại không có quyền ADMIN.');
           }
           return;
         }
@@ -457,7 +457,7 @@ function App() {
   };
 
   const handleDeleteUser = async (user) => {
-    if (!window.confirm(`XÄ‚Â³a tÄ‚Â i khoĂ¡ÂºÂ£n ${user.email}?`)) return;
+    if (!window.confirm(`Xóa tài khoản ${user.email}?`)) return;
     setBusyUserId(user.id);
     setUsersError('');
     try {
@@ -527,7 +527,7 @@ function App() {
   };
 
   const handleDeleteBook = async (book) => {
-    if (!window.confirm(`XÄ‚Â³a sÄ‚Â¡ch "${book.title}"?`)) return;
+    if (!window.confirm(`Xóa sách "${book.title}"?`)) return;
     setBusyBookId(book.id);
     setBooksError('');
     try {
@@ -554,8 +554,8 @@ function App() {
   };
 
   const handleUpdateOrderStatus = async (order, nextStatus) => {
-    const actionLabel = nextStatus === 'CANCELLED' ? 'hĂ¡Â»Â§y' : 'cĂ¡ÂºÂ­p nhĂ¡ÂºÂ­t';
-    if (!window.confirm(`BĂ¡ÂºÂ¡n cÄ‚Â³ chĂ¡ÂºÂ¯c muĂ¡Â»â€˜n ${actionLabel} Ă„â€˜Ă†Â¡n ${order.orderId}?`)) return;
+    const actionLabel = nextStatus === 'CANCELLED' ? 'hủy' : 'cập nhật';
+    if (!window.confirm(`Bạn có chắc muốn ${actionLabel} đơn ${order.orderId}?`)) return;
 
     setBusyOrderId(order.orderId);
     setOrdersError('');
@@ -577,7 +577,7 @@ function App() {
   };
 
   if (authStatus === 'loading') {
-    return <AuthGate status="loading" authError="Ă„Âang xÄ‚Â¡c thĂ¡Â»Â±c tÄ‚Â i khoĂ¡ÂºÂ£n quĂ¡ÂºÂ£n trĂ¡Â»â€¹..." onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
+    return <AuthGate status="loading" authError="Đang xác thực tài khoản quản trị..." onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
   }
 
   if (authStatus !== 'authenticated') {
@@ -777,7 +777,7 @@ function App() {
   } else if (page === 'reviews') {
     content = <ReviewsPage token={token} searchValue={reviewSearch} />;
   } else if (page === 'reports') {
-    content = <PlaceholderPage title="BÄ‚Â¡o cÄ‚Â¡o" description="" />;
+    content = <PlaceholderPage title="Báo cáo" description="" />;
   } else if (page === 'settings') {
     content = <SettingsPage adminUser={adminUser} token={token} onProfileUpdated={handleAdminProfileUpdated} />;
   }

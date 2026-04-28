@@ -24,14 +24,14 @@ function formatRelativeTime(value) {
   const diffMs = Date.now() - createdAt.getTime();
   const diffMinutes = Math.max(Math.floor(diffMs / 60000), 0);
 
-  if (diffMinutes < 1) return 'Vua xong';
-  if (diffMinutes < 60) return `${diffMinutes} phut truoc`;
+  if (diffMinutes < 1) return 'Vừa xong';
+  if (diffMinutes < 60) return `${diffMinutes} phút trước`;
 
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours} gio truoc`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 30) return `${diffDays} ngay truoc`;
+  if (diffDays < 30) return `${diffDays} ngày trước`;
 
   return createdAt.toLocaleDateString('vi-VN');
 }
@@ -47,23 +47,23 @@ function buildTags(review) {
   const tags = [];
 
   if (review.verifiedPurchase) {
-    tags.push({ label: 'Da mua hang', className: 'bg-slate-100 text-slate-500' });
+    tags.push({ label: 'Đã mua hàng', className: 'bg-slate-100 text-slate-500' });
   }
 
   if (review.status === 'PENDING') {
-    tags.push({ label: 'Cho duyet', className: 'bg-red-200 text-red-900', icon: 'schedule' });
+    tags.push({ label: 'Chờ duyệt', className: 'bg-red-200 text-red-900', icon: 'schedule' });
   } else if (review.status === 'APPROVED') {
-    tags.push({ label: 'Da duyet', className: 'bg-green-50 text-green-700', icon: 'check_circle' });
+    tags.push({ label: 'Đã duyệt', className: 'bg-green-50 text-green-700', icon: 'check_circle' });
   } else if (review.status === 'REJECTED') {
-    tags.push({ label: 'Da tu choi', className: 'bg-slate-200 text-slate-700', icon: 'block' });
+    tags.push({ label: 'Đã từ chối', className: 'bg-slate-200 text-slate-700', icon: 'block' });
   }
 
   if ((review.rating || 0) <= 3) {
-    tags.push({ label: 'Can ho tro', className: 'bg-slate-100 text-red-500' });
+    tags.push({ label: 'Cần hỗ trợ', className: 'bg-slate-100 text-red-500' });
   }
 
   if (review.adminReply) {
-    tags.push({ label: 'Da phan hoi', className: 'bg-blue-50 text-blue-600', icon: 'reply' });
+    tags.push({ label: 'Đã phản hồi', className: 'bg-blue-50 text-blue-600', icon: 'reply' });
   }
 
   return tags;
@@ -120,11 +120,11 @@ function ReviewCard({
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
               <MaterialIcon className="text-sm" fill>shield_person</MaterialIcon>
             </div>
-            <span className="text-xs font-bold uppercase tracking-tight text-slate-900">Phan hoi tu admin</span>
+            <span className="text-xs font-bold uppercase tracking-tight text-slate-900">Phản hồi từ admin</span>
           </div>
           <textarea
             className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-white p-4 text-sm outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-            placeholder="Nhap noi dung phan hoi cua ban..."
+            placeholder="Nhập nội dung phản hồi của bạn..."
             value={replyDraft}
             onChange={(event) => onReplyDraftChange(event.target.value)}
           />
@@ -133,17 +133,17 @@ function ReviewCard({
               {review.status === 'PENDING' ? (
                 <>
                   <button className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200" type="button" onClick={onReject}>
-                    Tu choi
+                    Từ chối
                   </button>
                   <button className="rounded-lg border border-green-200 px-4 py-2 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50" type="button" onClick={onApprove}>
-                    Duyet ngay
+                    Duyệt ngay
                   </button>
                 </>
               ) : null}
             </div>
             <div className="flex gap-3">
               <button className="rounded-lg px-6 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-200" type="button" onClick={onCloseReply}>
-                Huy bo
+                Hủy bỏ
               </button>
               <button
                 className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -151,7 +151,7 @@ function ReviewCard({
                 disabled={submitting || !replyDraft.trim()}
                 onClick={onSubmitReply}
               >
-                {submitting ? 'Dang gui...' : 'Gui phan hoi'}
+                {submitting ? 'Đang gửi...' : 'Gửi phản hồi'}
               </button>
             </div>
           </div>
@@ -194,7 +194,7 @@ function ReviewCard({
 
         {review.adminReply ? (
           <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-blue-700">Phan hoi hien tai</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-blue-700">Phản hồi hiện tại</p>
             <p className="text-sm leading-relaxed text-slate-900">{review.adminReply}</p>
           </div>
         ) : null}
@@ -215,7 +215,7 @@ function ReviewCard({
             type="button"
             onClick={onApprove}
           >
-            Duyet ngay
+            Duyệt ngay
           </button>
         ) : null}
         <button
@@ -224,7 +224,7 @@ function ReviewCard({
           onClick={onOpenReply}
         >
           <MaterialIcon className="text-sm">reply</MaterialIcon>
-          {review.adminReply ? 'Sua phan hoi' : 'Phan hoi'}
+          {review.adminReply ? 'Sửa phản hồi' : 'Phản hồi'}
         </button>
         {review.status !== 'REJECTED' ? (
           <button
@@ -233,7 +233,7 @@ function ReviewCard({
             onClick={onReject}
           >
             <MaterialIcon className="text-sm">block</MaterialIcon>
-            Tu choi
+            Từ chối
           </button>
         ) : null}
       </div>
@@ -274,7 +274,7 @@ function ReviewsPage({ token, searchValue }) {
         setSummary(summaryData);
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : 'Khong the tai du lieu danh gia');
+        setError(loadError instanceof Error ? loadError.message : 'Không thể tải dữ liệu đánh giá');
       } finally {
         if (active) {
           setLoading(false);
@@ -323,7 +323,7 @@ function ReviewsPage({ token, searchValue }) {
 
   const summaryCards = [
     {
-      label: 'Trung binh sao',
+      label: 'Trung bình sao',
       content: (
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-bold text-slate-900">{summary.averageRating.toFixed(1)}</span>
@@ -337,15 +337,15 @@ function ReviewsPage({ token, searchValue }) {
         </div>
       ),
     },
-    { label: 'Tong danh gia', value: summary.totalReviews.toLocaleString('vi-VN') },
+    { label: 'Tổng đánh giá', value: summary.totalReviews.toLocaleString('vi-VN') },
     {
-      label: 'Cho duyet',
+      label: 'Chờ duyệt',
       value: summary.pendingReviews.toLocaleString('vi-VN'),
       accent: 'border-l-4 border-red-400',
       valueClassName: 'text-red-500',
     },
     {
-      label: 'Ty le phan hoi',
+      label: 'Tỷ lệ phản hồi',
       value: `${summary.responseRate}%`,
       accent: 'border-l-4 border-blue-600',
       valueClassName: 'text-blue-600',
@@ -378,7 +378,7 @@ function ReviewsPage({ token, searchValue }) {
       updateLocalReview(updatedReview);
       await reloadSummary();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : 'Khong the cap nhat trang thai danh gia');
+      setError(updateError instanceof Error ? updateError.message : 'Không thể cập nhật trạng thái đánh giá');
     } finally {
       setBusyReviewId('');
     }
@@ -401,7 +401,7 @@ function ReviewsPage({ token, searchValue }) {
       setReplyOpenId('');
       await reloadSummary();
     } catch (replyError) {
-      setError(replyError instanceof Error ? replyError.message : 'Khong the gui phan hoi');
+      setError(replyError instanceof Error ? replyError.message : 'Không thể gửi phản hồi');
     } finally {
       setBusyReviewId('');
     }
@@ -411,11 +411,11 @@ function ReviewsPage({ token, searchValue }) {
     <main className="ml-64 min-h-screen bg-slate-100/70 p-12">
       <div className="mb-12 flex items-end justify-between gap-6">
         <div>
-          <h2 className="mb-2 text-2xl font-bold tracking-tight text-slate-900">Quan ly danh gia</h2>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight text-slate-900">Quản lý đánh giá</h2>
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <span>Trang chu</span>
+            <span>Trang chủ</span>
             <MaterialIcon className="text-sm">chevron_right</MaterialIcon>
-            <span className="text-blue-600">Danh gia khach hang</span>
+            <span className="text-blue-600">Đánh giá khách hàng</span>
           </nav>
         </div>
         <div className="flex gap-4">
@@ -425,26 +425,26 @@ function ReviewsPage({ token, searchValue }) {
               type="button"
               onClick={() => setActiveTab('ALL')}
             >
-              Tat ca
+              Tất cả
             </button>
             <button
               className={`px-4 py-2 text-sm font-semibold ${activeTab === 'PENDING' ? 'rounded-md bg-blue-50 text-blue-600' : 'text-slate-500 transition-colors hover:text-slate-900'}`}
               type="button"
               onClick={() => setActiveTab('PENDING')}
             >
-              Cho duyet
+              Chờ duyệt
             </button>
             <button
               className={`px-4 py-2 text-sm font-semibold ${activeTab === 'NEGATIVE' ? 'rounded-md bg-blue-50 text-blue-600' : 'text-slate-500 transition-colors hover:text-slate-900'}`}
               type="button"
               onClick={() => setActiveTab('NEGATIVE')}
             >
-              Tieu cuc
+              Tiêu cực
             </button>
           </div>
           <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700" type="button" onClick={() => reloadSummary()}>
             <MaterialIcon className="text-lg">refresh</MaterialIcon>
-            Lam moi
+            Làm mới
           </button>
         </div>
       </div>
@@ -465,12 +465,12 @@ function ReviewsPage({ token, searchValue }) {
       ) : null}
 
       {loading ? (
-        <div className="rounded-lg bg-white p-8 text-center text-slate-500 shadow-sm">Dang tai du lieu danh gia...</div>
+        <div className="rounded-lg bg-white p-8 text-center text-slate-500 shadow-sm">Đang tải dữ liệu đánh giá...</div>
       ) : null}
 
       {!loading && filteredReviews.length === 0 ? (
         <div className="rounded-lg bg-white p-8 text-center text-slate-500 shadow-sm">
-          Khong co danh gia phu hop voi bo loc hien tai.
+          Không có đánh giá phù hợp với bộ lọc hiện tại.
         </div>
       ) : null}
 
@@ -502,7 +502,7 @@ function ReviewsPage({ token, searchValue }) {
 
           <div className="mt-12 flex items-center justify-between rounded-lg border border-slate-50 bg-white px-8 py-4 shadow-sm">
             <span className="text-xs font-medium text-slate-500">
-              Hien thi {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredReviews.length)} tren {filteredReviews.length} danh gia
+              Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredReviews.length)} trên {filteredReviews.length} đánh giá
             </span>
             <div className="flex gap-2">
               <button

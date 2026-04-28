@@ -38,11 +38,11 @@ const BookDetail = () => {
 
         if (!res.ok) {
           if (res.status === 401) {
-            setError('Ban can dang nhap de xem sach');
+            setError('Bạn cần đăng nhập để xem sách');
             return;
           }
 
-          throw new Error(data?.message || 'Khong the tai sach');
+          throw new Error(data?.message || 'Không thể tải sách');
         }
 
         const foundBook = data?.result || data;
@@ -65,7 +65,7 @@ const BookDetail = () => {
         const data = await res.json().catch(() => null);
 
         if (!res.ok) {
-          throw new Error(data?.message || 'Khong the tai danh gia');
+          throw new Error(data?.message || 'Không thể tải đánh giá');
         }
 
         setReviews(data?.result || data || []);
@@ -82,13 +82,13 @@ const BookDetail = () => {
 
   const handleAddToCart = async () => {
     if (!user) {
-      toast.error('Vui long dang nhap de mua hang');
+      toast.error('Vui lòng đăng nhập để mua hàng');
       navigate('/login');
       return;
     }
 
     if (isOutOfStock) {
-      toast.error('San pham da het hang');
+      toast.error('Sản phẩm đã hết hàng');
       return;
     }
 
@@ -110,14 +110,14 @@ const BookDetail = () => {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        let message = 'Co loi xay ra';
+        let message = 'Có lỗi xảy ra';
 
         switch (data?.code) {
           case 1011:
-            message = 'So luong vuot qua ton kho';
+            message = 'Số lượng vượt quá tồn kho';
             break;
           case 1006:
-            message = 'Phien dang nhap het han';
+            message = 'Phiên đăng nhập đã hết hạn';
             navigate('/login');
             break;
           default:
@@ -128,10 +128,10 @@ const BookDetail = () => {
         return;
       }
 
-      toast.success('Da them san pham vao gio hang');
+      toast.success('Đã thêm sản phẩm vào giỏ hàng');
     } catch (err) {
       console.error(err);
-      toast.error('Khong the ket noi server');
+      toast.error('Không thể kết nối server');
     }
   };
 
@@ -139,19 +139,19 @@ const BookDetail = () => {
     event.preventDefault();
 
     if (!user) {
-      toast.error('Vui long dang nhap de viet nhan xet');
+      toast.error('Vui lòng đăng nhập để viết nhận xét');
       navigate('/login');
       return;
     }
 
     if (userRating === 0) {
-      toast.error('Vui long chon so sao');
+      toast.error('Vui lòng chọn số sao');
       return;
     }
 
     const token = localStorage.getItem('token');
     if (!token) {
-      toast.error('Phien dang nhap da het han');
+      toast.error('Phiên đăng nhập đã hết hạn');
       navigate('/login');
       return;
     }
@@ -174,15 +174,15 @@ const BookDetail = () => {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || 'Khong the gui danh gia');
+        throw new Error(data?.message || 'Không thể gửi đánh giá');
       }
 
       setComment('');
       setUserRating(0);
-      toast.success('Da gui danh gia. Danh gia cua ban se hien sau khi duoc admin duyet.');
+      toast.success('Đã gửi đánh giá. Đánh giá của bạn sẽ hiển thị sau khi được admin duyệt.');
     } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Khong the gui danh gia');
+      toast.error(err.message || 'Không thể gửi đánh giá');
     } finally {
       setSubmittingReview(false);
     }
@@ -212,7 +212,7 @@ const BookDetail = () => {
 
         <div>
           <h1 className="mb-2 text-3xl font-bold">{book.title}</h1>
-          <p className="mb-4 text-xl text-gray-600">Tac gia: {book.author}</p>
+          <p className="mb-4 text-xl text-gray-600">Tác giả: {book.author}</p>
           <div className="mb-4 flex items-center gap-2">
             <span className="text-2xl font-bold text-red-600">
               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
@@ -222,11 +222,11 @@ const BookDetail = () => {
 
           <div className="mb-6 flex items-center gap-2">
             <StarRating rating={book.rating} />
-            <span className="text-gray-500">({reviews.length} danh gia)</span>
+            <span className="text-gray-500">({reviews.length} đánh giá)</span>
           </div>
 
           <p className="mb-4 text-sm text-gray-500">
-            {isOutOfStock ? 'Het hang' : `Con ${stock} san pham`}
+            {isOutOfStock ? 'Hết hàng' : `Còn ${stock} sản phẩm`}
           </p>
 
           <button
@@ -234,25 +234,25 @@ const BookDetail = () => {
             disabled={isOutOfStock}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <ShoppingCart /> Them vao gio hang
+            <ShoppingCart /> Thêm vào giỏ hàng
           </button>
         </div>
       </div>
 
       <div className="border-t pt-8">
-        <h2 className="mb-6 text-2xl font-bold">Danh gia va Nhan xet</h2>
+        <h2 className="mb-6 text-2xl font-bold">Đánh giá và Nhận xét</h2>
 
         <div className="mb-8 rounded-lg bg-gray-50 p-6">
-          <h3 className="mb-4 font-semibold">Viet nhan xet cua ban</h3>
+          <h3 className="mb-4 font-semibold">Viết nhận xét của bạn</h3>
           <form onSubmit={handleSubmitReview}>
             <div className="mb-4">
-              <label className="mb-2 block text-sm">Danh gia cua ban:</label>
+              <label className="mb-2 block text-sm">Đánh giá của bạn:</label>
               <StarRating rating={userRating} onRate={setUserRating} editable />
             </div>
             <textarea
               className="mb-4 w-full rounded-lg border p-3 focus:ring-2 focus:ring-blue-500"
               rows="3"
-              placeholder="Chia se cam nghi cua ban ve sach nay..."
+              placeholder="Chia sẻ cảm nhận của bạn về cuốn sách này..."
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               required
@@ -262,16 +262,16 @@ const BookDetail = () => {
               disabled={submittingReview}
               className="rounded bg-gray-800 px-6 py-2 text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submittingReview ? 'Dang gui...' : 'Gui nhan xet'}
+              {submittingReview ? 'Đang gửi...' : 'Gửi nhận xét'}
             </button>
           </form>
           <p className="mt-3 text-sm text-gray-500">
-            Danh gia moi se can admin duyet truoc khi hien cong khai.
+            Đánh giá mới sẽ cần admin duyệt trước khi hiển thị công khai.
           </p>
         </div>
 
         <div className="space-y-6">
-          {reviewsLoading && <p className="text-gray-500">Dang tai danh gia...</p>}
+          {reviewsLoading && <p className="text-gray-500">Đang tải đánh giá...</p>}
           {!reviewsLoading && reviews.map((review) => (
             <div key={review.id} className="border-b pb-4 last:border-0">
               <div className="mb-2 flex items-center justify-between">
@@ -281,13 +281,13 @@ const BookDetail = () => {
               <p className="text-gray-600">{review.content}</p>
               {review.adminReply ? (
                 <div className="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-slate-700">
-                  <span className="mb-1 block font-semibold text-blue-700">Phan hoi tu admin</span>
+                  <span className="mb-1 block font-semibold text-blue-700">Phản hồi từ admin</span>
                   {review.adminReply}
                 </div>
               ) : null}
             </div>
           ))}
-          {!reviewsLoading && reviews.length === 0 && <p className="text-gray-500">Chua co nhan xet nao.</p>}
+          {!reviewsLoading && reviews.length === 0 && <p className="text-gray-500">Chưa có nhận xét nào.</p>}
         </div>
       </div>
     </div>
