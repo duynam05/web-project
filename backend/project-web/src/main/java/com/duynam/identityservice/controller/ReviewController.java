@@ -2,6 +2,7 @@ package com.duynam.identityservice.controller;
 
 import com.duynam.identityservice.dto.request.ApiResponse;
 import com.duynam.identityservice.dto.request.ReviewCreateRequest;
+import com.duynam.identityservice.dto.request.ReviewReplyRequest;
 import com.duynam.identityservice.dto.request.ReviewStatusUpdateRequest;
 import com.duynam.identityservice.dto.response.ReviewResponse;
 import com.duynam.identityservice.dto.response.ReviewSummaryResponse;
@@ -66,6 +67,15 @@ public class ReviewController {
             @RequestBody @Valid ReviewStatusUpdateRequest request) {
         return ApiResponse.<ReviewResponse>builder()
                 .result(reviewService.updateStatus(reviewId, request.getStatus()))
+                .build();
+    }
+
+    @PostMapping("/admin/reviews/{reviewId}/reply")
+    public ApiResponse<ReviewResponse> reply(
+            @PathVariable UUID reviewId,
+            @RequestBody @Valid ReviewReplyRequest request) {
+        return ApiResponse.<ReviewResponse>builder()
+                .result(reviewService.reply(reviewId, request))
                 .build();
     }
 

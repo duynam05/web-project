@@ -50,12 +50,12 @@ function buildTags(review) {
     tags.push({ label: 'Đã mua hàng', className: 'bg-slate-100 text-slate-500' });
   }
 
-  if (review.status === 'PENDING') {
-    tags.push({ label: 'Chờ duyệt', className: 'bg-red-200 text-red-900', icon: 'schedule' });
-  } else if (review.status === 'APPROVED') {
-    tags.push({ label: 'Đã duyệt', className: 'bg-green-50 text-green-700', icon: 'check_circle' });
+  if (review.status === 'APPROVED') {
+    tags.push({ label: 'Đang hiển thị', className: 'bg-green-50 text-green-700', icon: 'check_circle' });
   } else if (review.status === 'REJECTED') {
     tags.push({ label: 'Đã từ chối', className: 'bg-slate-200 text-slate-700', icon: 'block' });
+  } else if (review.status === 'PENDING') {
+    tags.push({ label: 'Bản cũ chờ duyệt', className: 'bg-amber-100 text-amber-800', icon: 'schedule' });
   }
 
   if ((review.rating || 0) <= 3) {
@@ -74,7 +74,6 @@ function ReviewCard({
   replyOpen,
   replyDraft,
   submitting,
-  onApprove,
   onReject,
   onOpenReply,
   onCloseReply,
@@ -118,7 +117,9 @@ function ReviewCard({
         <div className="ml-12 rounded-lg border border-slate-100 bg-slate-50 p-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
-              <MaterialIcon className="text-sm" fill>shield_person</MaterialIcon>
+              <MaterialIcon className="text-sm" fill>
+                shield_person
+              </MaterialIcon>
             </div>
             <span className="text-xs font-bold uppercase tracking-tight text-slate-900">Phản hồi từ admin</span>
           </div>
@@ -128,32 +129,18 @@ function ReviewCard({
             value={replyDraft}
             onChange={(event) => onReplyDraftChange(event.target.value)}
           />
-          <div className="mt-4 flex justify-between gap-3">
-            <div className="flex gap-3">
-              {review.status === 'PENDING' ? (
-                <>
-                  <button className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200" type="button" onClick={onReject}>
-                    Từ chối
-                  </button>
-                  <button className="rounded-lg border border-green-200 px-4 py-2 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50" type="button" onClick={onApprove}>
-                    Duyệt ngay
-                  </button>
-                </>
-              ) : null}
-            </div>
-            <div className="flex gap-3">
-              <button className="rounded-lg px-6 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-200" type="button" onClick={onCloseReply}>
-                Hủy bỏ
-              </button>
-              <button
-                className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                type="button"
-                disabled={submitting || !replyDraft.trim()}
-                onClick={onSubmitReply}
-              >
-                {submitting ? 'Đang gửi...' : 'Gửi phản hồi'}
-              </button>
-            </div>
+          <div className="mt-4 flex justify-end gap-3">
+            <button className="rounded-lg px-6 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-200" type="button" onClick={onCloseReply}>
+              Hủy bỏ
+            </button>
+            <button
+              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              disabled={submitting || !replyDraft.trim()}
+              onClick={onSubmitReply}
+            >
+              {submitting ? 'Đang gửi...' : 'Gửi phản hồi'}
+            </button>
           </div>
         </div>
       </div>
@@ -162,7 +149,7 @@ function ReviewCard({
 
   return (
     <div className="relative grid grid-cols-12 items-start gap-8 overflow-hidden rounded-lg border border-slate-50 bg-white p-8 shadow-sm">
-      {review.status === 'PENDING' ? <div className="absolute bottom-0 left-0 top-0 w-1 bg-red-400" /> : null}
+      {review.status === 'PENDING' ? <div className="absolute bottom-0 left-0 top-0 w-1 bg-amber-400" /> : null}
       <div className="col-span-3">
         <div className="mb-4 flex gap-4">
           <img
@@ -175,7 +162,7 @@ function ReviewCard({
             <p className="text-xs text-slate-500">{review.author}</p>
             <span
               className={`mt-2 self-start rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
-                review.status === 'PENDING' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'
+                review.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-600'
               }`}
             >
               {review.category}
@@ -209,15 +196,6 @@ function ReviewCard({
         </div>
       </div>
       <div className="col-span-2 flex flex-col items-end gap-3">
-        {review.status === 'PENDING' ? (
-          <button
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            type="button"
-            onClick={onApprove}
-          >
-            Duyệt ngay
-          </button>
-        ) : null}
         <button
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50"
           type="button"
@@ -289,13 +267,18 @@ function ReviewsPage({ token, searchValue }) {
     };
   }, [token]);
 
+  const rejectedReviewsCount = useMemo(
+    () => reviews.filter((review) => review.status === 'REJECTED').length,
+    [reviews],
+  );
+
   const filteredReviews = useMemo(() => {
     const normalizedSearch = normalizeText(searchValue);
 
     return reviews.filter((review) => {
       const matchesTab =
         activeTab === 'ALL' ||
-        (activeTab === 'PENDING' && review.status === 'PENDING') ||
+        (activeTab === 'REJECTED' && review.status === 'REJECTED') ||
         (activeTab === 'NEGATIVE' && Number(review.rating || 0) <= 3);
 
       const matchesSearch =
@@ -339,10 +322,10 @@ function ReviewsPage({ token, searchValue }) {
     },
     { label: 'Tổng đánh giá', value: summary.totalReviews.toLocaleString('vi-VN') },
     {
-      label: 'Chờ duyệt',
-      value: summary.pendingReviews.toLocaleString('vi-VN'),
-      accent: 'border-l-4 border-red-400',
-      valueClassName: 'text-red-500',
+      label: 'Đã từ chối',
+      value: rejectedReviewsCount.toLocaleString('vi-VN'),
+      accent: 'border-l-4 border-slate-400',
+      valueClassName: 'text-slate-600',
     },
     {
       label: 'Tỷ lệ phản hồi',
@@ -428,11 +411,11 @@ function ReviewsPage({ token, searchValue }) {
               Tất cả
             </button>
             <button
-              className={`px-4 py-2 text-sm font-semibold ${activeTab === 'PENDING' ? 'rounded-md bg-blue-50 text-blue-600' : 'text-slate-500 transition-colors hover:text-slate-900'}`}
+              className={`px-4 py-2 text-sm font-semibold ${activeTab === 'REJECTED' ? 'rounded-md bg-blue-50 text-blue-600' : 'text-slate-500 transition-colors hover:text-slate-900'}`}
               type="button"
-              onClick={() => setActiveTab('PENDING')}
+              onClick={() => setActiveTab('REJECTED')}
             >
-              Chờ duyệt
+              Đã từ chối
             </button>
             <button
               className={`px-4 py-2 text-sm font-semibold ${activeTab === 'NEGATIVE' ? 'rounded-md bg-blue-50 text-blue-600' : 'text-slate-500 transition-colors hover:text-slate-900'}`}
@@ -484,7 +467,6 @@ function ReviewsPage({ token, searchValue }) {
                 replyOpen={replyOpenId === review.id}
                 replyDraft={replyDrafts[review.id] ?? review.adminReply ?? ''}
                 submitting={busyReviewId === review.id}
-                onApprove={() => handleStatusUpdate(review.id, 'APPROVED')}
                 onReject={() => handleStatusUpdate(review.id, 'REJECTED')}
                 onOpenReply={() => {
                   setReplyOpenId(review.id);

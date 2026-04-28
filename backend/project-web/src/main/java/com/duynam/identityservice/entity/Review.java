@@ -53,7 +53,7 @@ public class Review {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     @Builder.Default
-    private ReviewStatus status = ReviewStatus.PENDING;
+    private ReviewStatus status = ReviewStatus.APPROVED;
 
     @Column(nullable = false)
     @Builder.Default

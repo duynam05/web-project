@@ -53,7 +53,7 @@ public class ReviewService {
                 .user(user)
                 .rating(request.getRating())
                 .content(request.getContent().trim())
-                .status(ReviewStatus.PENDING)
+                .status(ReviewStatus.APPROVED)
                 .verifiedPurchase(hasVerifiedPurchase(user.getId(), bookId))
                 .build();
 
