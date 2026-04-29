@@ -10,6 +10,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PaymentSessionService {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentSessionService.class);
 
     private final PaymentSessionRepository paymentSessionRepository;
     private final BankTransferProperties bankTransferProperties;
@@ -57,7 +61,9 @@ public class PaymentSessionService {
     @Transactional(readOnly = true)
     public PaymentSession findLatestByProviderOrderCode(Long providerOrderCode) {
         if (providerOrderCode == null) return null;
-        return paymentSessionRepository.findLatestByProviderOrderCode(providerOrderCode).orElse(null);
+        PaymentSession session = paymentSessionRepository.findLatestByProviderOrderCode(providerOrderCode).orElse(null);
+        log.info("lookup payment session by providerOrderCode={}: found={}", providerOrderCode, session != null);
+        return session;
     }
 
     @Transactional

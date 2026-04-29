@@ -7,6 +7,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +40,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class OrdersService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrdersService.class);
 
     private final OrdersRepository ordersRepository;
     private final CartRepository cartRepository;
@@ -250,21 +254,39 @@ public class OrdersService {
     @Transactional
     public boolean handlePayOsWebhook(PayOsWebhookRequest request) {
         if (request == null || request.getData() == null) {
+            log.warn("payOS webhook ignored because payload or data is null");
             return false;
         }
 
         if (!payOsService.verifyWebhookSignature(request)) {
+            log.warn("payOS webhook signature verification failed: orderCode={}, paymentLinkId={}",
+                    request.getData().getOrderCode(),
+                    request.getData().getPaymentLinkId());
             return false;
         }
 
+        log.info("payOS webhook signature verified: orderCode={}, amount={}, reference={}",
+                request.getData().getOrderCode(),
+                request.getData().getAmount(),
+                request.getData().getReference());
+
         PaymentSession session = paymentSessionService.findLatestByProviderOrderCode(request.getData().getOrderCode());
         if (session == null) {
+            log.warn("payOS webhook could not find payment session for providerOrderCode={}",
+                    request.getData().getOrderCode());
             return false;
         }
 
         Orders order = session.getOrder();
+        log.info("payOS webhook matched payment session: sessionId={}, orderId={}, currentPaymentStatus={}, currentOrderStatus={}",
+                session.getId(),
+                order.getId(),
+                order.getPaymentStatus(),
+                order.getStatus());
+
         if (PaymentStatus.PAID.equals(order.getPaymentStatus())) {
             paymentSessionService.markSucceeded(session, request.getData());
+            log.info("payOS webhook found order already marked as PAID: orderId={}", order.getId());
             return true;
         }
 
@@ -281,6 +303,10 @@ public class OrdersService {
 
         ordersRepository.save(order);
         paymentSessionService.markSucceeded(session, request.getData());
+        log.info("payOS webhook updated order to PAID: orderId={}, paymentReference={}, providerReference={}",
+                order.getId(),
+                order.getPaymentReference(),
+                request.getData().getReference());
         return true;
     }
 
