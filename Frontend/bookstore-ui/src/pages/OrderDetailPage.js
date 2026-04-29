@@ -70,6 +70,38 @@ const OrderDetailPage = () => {
     if (token) fetchOrder();
   }, [orderId, token]);
 
+  useEffect(() => {
+    if (!orderId || !token) return undefined;
+    if (!order) return undefined;
+    if (order.paymentMethod !== 'BANK_TRANSFER' || order.paymentStatus === 'PAID' || order.status === 'CANCELLED') {
+      return undefined;
+    }
+
+    let active = true;
+
+    const pollOrder = async () => {
+      try {
+        const res = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!active || !res.ok || !data?.result) return;
+        setOrder(data.result);
+      } catch {
+        // Ignore temporary polling failures while waiting for webhook confirmation.
+      }
+    };
+
+    const intervalId = window.setInterval(pollOrder, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [order, orderId, token]);
+
   if (!order) return <div className="p-10">Loading...</div>;
 
   const transferReference = getTransferReference(order);
@@ -107,16 +139,6 @@ const OrderDetailPage = () => {
             <p><b>Nội dung:</b> {transferReference}</p>
             {transferInfo.expiresAt ? <p><b>Hiệu lực:</b> {new Date(transferInfo.expiresAt).toLocaleString('vi-VN')}</p> : null}
           </div>
-          {transferInfo.paymentUrl ? (
-            <a
-              className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-              href={transferInfo.paymentUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Mở cổng thanh toán payOS
-            </a>
-          ) : null}
         </div>
       ) : null}
 

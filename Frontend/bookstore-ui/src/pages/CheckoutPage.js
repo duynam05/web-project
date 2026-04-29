@@ -72,6 +72,21 @@ function getTransferInfo(order) {
   };
 }
 
+async function fetchOrderById(orderId, token) {
+  const response = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || 'Không thể lấy trạng thái đơn hàng');
+  }
+
+  return data?.result;
+}
+
 const CheckoutPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -98,6 +113,37 @@ const CheckoutPage = () => {
       email: user.email || '',
     }));
   }, [user]);
+
+  useEffect(() => {
+    if (!bankTransferOrder?.orderId) return undefined;
+    if (bankTransferOrder.paymentStatus === 'PAID') return undefined;
+
+    const token = localStorage.getItem('token');
+    let active = true;
+
+    const pollOrderStatus = async () => {
+      try {
+        const latestOrder = await fetchOrderById(bankTransferOrder.orderId, token);
+        if (!active || !latestOrder) return;
+
+        setBankTransferOrder(latestOrder);
+        if (latestOrder.paymentStatus === 'PAID') {
+          toast.success('Đã nhận thanh toán. Đang chuyển về trang đơn hàng.');
+          navigate(`/account/orders/${latestOrder.orderId}`, { replace: true });
+        }
+      } catch {
+        // Keep polling silently while the user is waiting on payment confirmation.
+      }
+    };
+
+    const intervalId = window.setInterval(pollOrderStatus, 5000);
+    pollOrderStatus();
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [bankTransferOrder, navigate]);
 
   const items = state?.items || [];
   const subtotal = items.reduce((sum, item) => sum + (Number(item.unitPrice) || 0) * item.quantity, 0);
@@ -312,21 +358,11 @@ const CheckoutPage = () => {
                   </div>
                 ) : null}
                 <div className="rounded-2xl bg-slate-50 p-4 text-slate-600">
-                  Hệ thống đang dùng payment session riêng cho đơn này. Khi nối PSP/IPN thật, backend sẽ chỉ xác nhận đơn sau khi nhận callback hợp lệ hoặc query trạng thái thành công.
+                  Hệ thống đang chờ webhook xác nhận từ payOS. Bạn có thể giữ nguyên trang này, khi thanh toán thành công hệ thống sẽ tự chuyển về trang đơn hàng.
                 </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-3">
-                {transferInfo.paymentUrl ? (
-                  <a
-                    className="w-full rounded-xl bg-emerald-600 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-700"
-                    href={transferInfo.paymentUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Mở cổng thanh toán payOS
-                  </a>
-                ) : null}
                 <button className="w-full rounded-xl bg-blue-700 py-3 text-sm font-semibold text-white transition hover:bg-blue-800" type="button" onClick={() => navigate(`/account/orders/${bankTransferOrder.orderId}`)}>
                   Xem chi tiết đơn hàng
                 </button>
