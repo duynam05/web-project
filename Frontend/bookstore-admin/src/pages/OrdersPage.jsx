@@ -104,8 +104,25 @@ function paymentStatusLabel(status) {
   }
 }
 
+function paymentMethodLabel(method) {
+  switch (method) {
+    case 'COD':
+      return 'Thanh toán khi nhận hàng';
+    case 'BANK_TRANSFER':
+      return 'Chuyển khoản ngân hàng';
+    case 'ONLINE':
+      return 'Thanh toán online';
+    default:
+      return method || '--';
+  }
+}
+
 function buildOrderActions(order) {
   const actions = [{ key: 'view', label: 'Xem chi tiết', icon: 'visibility' }];
+
+  if (order.paymentMethod === 'BANK_TRANSFER' && order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED') {
+    actions.push({ key: 'confirm_payment', label: 'Xác nhận đã nhận tiền', icon: 'payments' });
+  }
 
   if (order.status === 'PENDING' || order.status === 'PENDING_PAYMENT') {
     actions.push({ key: 'confirm', label: 'Xác nhận đơn', icon: 'check_circle', status: 'CONFIRMED' });
@@ -191,10 +208,12 @@ function DetailPanel({ selectedOrder, onCloseDetail }) {
             </div>
             <div className="mt-4 space-y-1 text-sm text-slate-500">
               <p>Thanh toán: {paymentStatusLabel(selectedOrder.paymentStatus)}</p>
-              <p>Hình thức: {selectedOrder.paymentMethod || '--'}</p>
+              <p>Hình thức: {paymentMethodLabel(selectedOrder.paymentMethod)}</p>
+              <p>Mã tham chiếu: {selectedOrder.paymentReference || '--'}</p>
             </div>
             <p className="mt-4 text-lg font-bold text-slate-900">{formatCurrency(selectedOrder.totalPrice)}</p>
             <p className="mt-1 text-sm text-slate-500">Ngày đặt: {formatDateTime(selectedOrder.createdAt)}</p>
+            <p className="mt-1 text-sm text-slate-500">Thanh toán lúc: {formatDateTime(selectedOrder.paidAt)}</p>
           </div>
         </div>
       </div>
@@ -214,6 +233,7 @@ export default function OrdersPage({
   onViewOrder,
   onCloseDetail,
   onUpdateStatus,
+  onConfirmPayment,
 }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
@@ -230,7 +250,7 @@ export default function OrdersPage({
       const matchesPaymentStatus = paymentStatusFilter === 'ALL' || (order.paymentStatus || 'UNPAID') === paymentStatusFilter;
       const matchesSearch =
         !normalizedSearch ||
-        [order.orderId, order.customerName, order.customerEmail, order.customerId, order.phone, order.address]
+        [order.orderId, order.customerName, order.customerEmail, order.customerId, order.phone, order.address, order.paymentReference]
           .some((value) => normalizeText(value).includes(normalizedSearch));
 
       return matchesStatus && matchesPaymentStatus && matchesSearch;
@@ -270,7 +290,7 @@ export default function OrdersPage({
   }, []);
 
   const handleExportCsv = () => {
-    const header = ['Mã đơn', 'Khách hàng', 'Email', 'Tổng tiền', 'Trạng thái', 'Thanh toán', 'Hình thức', 'Ngày đặt'];
+    const header = ['Mã đơn', 'Khách hàng', 'Email', 'Tổng tiền', 'Trạng thái', 'Thanh toán', 'Hình thức', 'Mã tham chiếu', 'Ngày đặt'];
     const rows = filteredOrders.map((order) => [
       order.orderId,
       order.customerName,
@@ -278,7 +298,8 @@ export default function OrdersPage({
       order.totalPrice,
       order.status,
       order.paymentStatus,
-      order.paymentMethod,
+      paymentMethodLabel(order.paymentMethod),
+      order.paymentReference,
       order.createdAt,
     ]);
 
@@ -414,7 +435,10 @@ export default function OrdersPage({
                 return (
                   <tr key={order.orderId} className={`group cursor-pointer transition-colors hover:bg-slate-50/30 ${isSelected ? 'bg-blue-50/40' : ''}`} onClick={() => onViewOrder(order.orderId)}>
                     <td className="px-6 py-5">
-                      <span className="font-mono text-sm font-bold text-blue-600">#{order.orderId?.slice(0, 8)}</span>
+                      <div className="space-y-1">
+                        <span className="block font-mono text-sm font-bold text-blue-600">#{order.orderId?.slice(0, 8)}</span>
+                        <span className="block text-[11px] text-slate-500">{paymentMethodLabel(order.paymentMethod)}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -431,10 +455,13 @@ export default function OrdersPage({
                       {formatCurrency(order.totalPrice)}
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold ${status.wrap}`}>
-                        <span className={`mr-2 h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                        {status.label}
-                      </span>
+                      <div className="space-y-2">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold ${status.wrap}`}>
+                          <span className={`mr-2 h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                          {status.label}
+                        </span>
+                        <p className="text-[11px] font-medium text-slate-500">{paymentStatusLabel(order.paymentStatus)}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-xs font-medium text-slate-500">{formatDateTime(order.createdAt)}</td>
                     <td className="relative px-6 py-5 text-right">
@@ -463,6 +490,10 @@ export default function OrdersPage({
                                 setOpenMenuOrderId('');
                                 if (action.key === 'view') {
                                   onViewOrder(order.orderId);
+                                  return;
+                                }
+                                if (action.key === 'confirm_payment') {
+                                  onConfirmPayment(order);
                                   return;
                                 }
                                 onUpdateStatus(order, action.status);

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,12 +16,14 @@ import com.duynam.identityservice.constant.PaymentMethod;
 import com.duynam.identityservice.constant.PaymentStatus;
 import com.duynam.identityservice.dto.request.OrderPaymentRequest;
 import com.duynam.identityservice.dto.request.OrderRequest;
+import com.duynam.identityservice.dto.request.PayOsWebhookRequest;
 import com.duynam.identityservice.dto.response.OrderItemResponse;
 import com.duynam.identityservice.dto.response.OrderResponse;
 import com.duynam.identityservice.entity.Book;
 import com.duynam.identityservice.entity.CartItem;
 import com.duynam.identityservice.entity.OrderItems;
 import com.duynam.identityservice.entity.Orders;
+import com.duynam.identityservice.entity.PaymentSession;
 import com.duynam.identityservice.entity.User;
 import com.duynam.identityservice.exception.AppException;
 import com.duynam.identityservice.exception.ErrorCode;
@@ -41,6 +44,8 @@ public class OrdersService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final OrderValidator orderValidator;
+    private final PaymentSessionService paymentSessionService;
+    private final PayOsService payOsService;
 
     @Transactional
     public OrderResponse createOrder(String email, OrderRequest request) {
@@ -95,23 +100,37 @@ public class OrdersService {
         order.setTotalPrice(totalPrice);
 
         Orders savedOrder = ordersRepository.save(order);
-        cartRepository.deleteByUserEmail(email);
+        if (PaymentMethod.BANK_TRANSFER.equals(savedOrder.getPaymentMethod())
+                && (savedOrder.getPaymentReference() == null || savedOrder.getPaymentReference().isBlank())) {
+            savedOrder.setPaymentReference(buildBankTransferReference(savedOrder.getId()));
+            savedOrder = ordersRepository.save(savedOrder);
+            paymentSessionService.getOrCreateBankTransferSession(savedOrder);
+        }
 
+        cartRepository.deleteByUserEmail(email);
         return toOrderResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByUser(String email) {
-        return ordersRepository.findByUserEmailOrderByCreatedAtDesc(email).stream()
-                .map(this::toOrderResponse)
+        List<Orders> orders = ordersRepository.findByUserEmailOrderByCreatedAtDesc(email);
+        Map<UUID, PaymentSession> latestSessions = paymentSessionService.findLatestByOrderIds(
+                orders.stream().map(Orders::getId).toList());
+
+        return orders.stream()
+                .map(order -> toOrderResponse(order, latestSessions.get(order.getId())))
                 .toList();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
-        return ordersRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::toOrderResponse)
+        List<Orders> orders = ordersRepository.findAllByOrderByCreatedAtDesc();
+        Map<UUID, PaymentSession> latestSessions = paymentSessionService.findLatestByOrderIds(
+                orders.stream().map(Orders::getId).toList());
+
+        return orders.stream()
+                .map(order -> toOrderResponse(order, latestSessions.get(order.getId())))
                 .toList();
     }
 
@@ -124,6 +143,29 @@ public class OrdersService {
     @Transactional(readOnly = true)
     public OrderResponse getOrderByIdForAdmin(UUID orderId) {
         return toOrderResponse(findOrderForAdmin(orderId));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getPaymentSession(String email, UUID orderId) {
+        Orders order = findOrderForUser(email, orderId);
+        if (!PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
+            return toOrderResponse(order);
+        }
+
+        paymentSessionService.getOrCreateBankTransferSession(order);
+        return toOrderResponse(order);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public OrderResponse getPaymentSessionForAdmin(UUID orderId) {
+        Orders order = findOrderForAdmin(orderId);
+        if (!PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
+            return toOrderResponse(order);
+        }
+
+        paymentSessionService.getOrCreateBankTransferSession(order);
+        return toOrderResponse(order);
     }
 
     @Transactional
@@ -142,7 +184,7 @@ public class OrdersService {
 
         order.setPaymentMethod(paymentMethod);
         order.setPaymentStatus(PaymentStatus.PAID);
-        order.setPaymentReference("PAY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase());
+        order.setPaymentReference("PAY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT));
         order.setPaidAt(LocalDateTime.now());
 
         if (OrderStatus.PENDING.equals(order.getStatus()) || OrderStatus.PENDING_PAYMENT.equals(order.getStatus())) {
@@ -174,6 +216,76 @@ public class OrdersService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
+    public OrderResponse confirmBankTransferPayment(UUID orderId) {
+        Orders order = findOrderForAdmin(orderId);
+
+        if (PaymentStatus.PAID.equals(order.getPaymentStatus())) {
+            throw new AppException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
+        }
+
+        if (!PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
+            throw new AppException(ErrorCode.PAYMENT_METHOD_NOT_SUPPORTED);
+        }
+
+        if (OrderStatus.CANCELLED.equals(order.getStatus()) || OrderStatus.COMPLETED.equals(order.getStatus())) {
+            throw new AppException(ErrorCode.ORDER_STATUS_TRANSITION_NOT_ALLOWED);
+        }
+
+        if (order.getPaymentReference() == null || order.getPaymentReference().isBlank()) {
+            order.setPaymentReference(buildBankTransferReference(order.getId()));
+        }
+
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setPaidAt(LocalDateTime.now());
+
+        if (OrderStatus.PENDING.equals(order.getStatus()) || OrderStatus.PENDING_PAYMENT.equals(order.getStatus())) {
+            order.setStatus(OrderStatus.CONFIRMED);
+        }
+
+        Orders savedOrder = ordersRepository.save(order);
+        paymentSessionService.markSucceeded(savedOrder, "MANUAL-" + LocalDateTime.now().toString());
+        return toOrderResponse(savedOrder);
+    }
+
+    @Transactional
+    public boolean handlePayOsWebhook(PayOsWebhookRequest request) {
+        if (request == null || request.getData() == null) {
+            return false;
+        }
+
+        if (!payOsService.verifyWebhookSignature(request)) {
+            return false;
+        }
+
+        PaymentSession session = paymentSessionService.findLatestByProviderOrderCode(request.getData().getOrderCode());
+        if (session == null) {
+            return false;
+        }
+
+        Orders order = session.getOrder();
+        if (PaymentStatus.PAID.equals(order.getPaymentStatus())) {
+            paymentSessionService.markSucceeded(session, request.getData());
+            return true;
+        }
+
+        order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setPaidAt(LocalDateTime.now());
+        if (request.getData().getReference() != null && !request.getData().getReference().isBlank()) {
+            order.setPaymentReference(request.getData().getReference());
+        }
+
+        if (OrderStatus.PENDING.equals(order.getStatus()) || OrderStatus.PENDING_PAYMENT.equals(order.getStatus())) {
+            order.setStatus(OrderStatus.CONFIRMED);
+        }
+
+        ordersRepository.save(order);
+        paymentSessionService.markSucceeded(session, request.getData());
+        return true;
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, String rawStatus) {
         Orders order = findOrderForAdmin(orderId);
         String nextStatus = parseOrderStatus(rawStatus);
@@ -183,6 +295,12 @@ public class OrdersService {
         }
 
         if (!isTransitionAllowed(order.getStatus(), nextStatus)) {
+            throw new AppException(ErrorCode.ORDER_STATUS_TRANSITION_NOT_ALLOWED);
+        }
+
+        if (OrderStatus.CONFIRMED.equals(nextStatus)
+                && PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())
+                && !PaymentStatus.PAID.equals(order.getPaymentStatus())) {
             throw new AppException(ErrorCode.ORDER_STATUS_TRANSITION_NOT_ALLOWED);
         }
 
@@ -217,8 +335,10 @@ public class OrdersService {
             return PaymentMethod.COD;
         }
 
-        String normalized = paymentMethod.trim().toUpperCase();
-        if (PaymentMethod.COD.equals(normalized) || PaymentMethod.ONLINE.equals(normalized)) {
+        String normalized = paymentMethod.trim().toUpperCase(Locale.ROOT);
+        if (PaymentMethod.COD.equals(normalized)
+                || PaymentMethod.BANK_TRANSFER.equals(normalized)
+                || PaymentMethod.ONLINE.equals(normalized)) {
             return normalized;
         }
 
@@ -226,14 +346,14 @@ public class OrdersService {
     }
 
     private String resolveInitialOrderStatus(String paymentMethod) {
-        if (PaymentMethod.ONLINE.equals(paymentMethod)) {
+        if (PaymentMethod.ONLINE.equals(paymentMethod) || PaymentMethod.BANK_TRANSFER.equals(paymentMethod)) {
             return OrderStatus.PENDING_PAYMENT;
         }
         return OrderStatus.PENDING;
     }
 
     private String resolveInitialPaymentStatus(String paymentMethod) {
-        if (PaymentMethod.ONLINE.equals(paymentMethod)) {
+        if (PaymentMethod.ONLINE.equals(paymentMethod) || PaymentMethod.BANK_TRANSFER.equals(paymentMethod)) {
             return PaymentStatus.PENDING;
         }
         return PaymentStatus.UNPAID;
@@ -286,14 +406,23 @@ public class OrdersService {
             return PaymentStatus.REFUNDED;
         }
 
-        if (PaymentMethod.ONLINE.equals(paymentMethod)) {
+        if (PaymentMethod.ONLINE.equals(paymentMethod) || PaymentMethod.BANK_TRANSFER.equals(paymentMethod)) {
             return PaymentStatus.FAILED;
         }
 
         return PaymentStatus.UNPAID;
     }
 
+    private String buildBankTransferReference(UUID orderId) {
+        String normalized = orderId.toString().replace("-", "").toUpperCase(Locale.ROOT);
+        return "DH-" + normalized.substring(0, 8);
+    }
+
     private OrderResponse toOrderResponse(Orders order) {
+        return toOrderResponse(order, paymentSessionService.findLatestForOrder(order.getId()));
+    }
+
+    private OrderResponse toOrderResponse(Orders order, PaymentSession paymentSession) {
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
                         .id(item.getId().toString())
@@ -320,10 +449,10 @@ public class OrdersService {
                 .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod() : PaymentMethod.COD)
                 .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus() : PaymentStatus.UNPAID)
                 .paymentReference(order.getPaymentReference())
+                .paymentSession(paymentSessionService.toResponse(paymentSession))
                 .createdAt(order.getCreatedAt())
                 .paidAt(order.getPaidAt())
                 .items(items)
                 .build();
     }
 }
-

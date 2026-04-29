@@ -2,7 +2,6 @@ package com.duynam.identityservice.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,23 +15,21 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderResponse {
-    String orderId;
-    String customerId;
-    String customerEmail;
-    String customerName;
-    BigDecimal totalPrice;
+public class PaymentSessionResponse {
+    String sessionId;
+    String provider;
     String status;
-    String phone;
-    String address;
-    Double latitude;
-    Double longitude;
-    String paymentMethod;
-    String paymentStatus;
-    String paymentReference;
-    PaymentSessionResponse paymentSession;
+    BigDecimal amount;
+    String reference;
+    String bankName;
+    String accountNumber;
+    String accountHolder;
+    String qrUrl;
+    String paymentUrl;
+    String providerTransactionId;
+    Long providerOrderCode;
+    String providerPaymentLinkId;
+    LocalDateTime expiresAt;
+    LocalDateTime confirmedAt;
     LocalDateTime createdAt;
-    LocalDateTime paidAt;
-    List<OrderItemResponse> items;
 }
-

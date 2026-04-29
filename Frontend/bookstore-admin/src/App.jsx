@@ -576,6 +576,26 @@ function App() {
     }
   };
 
+  const handleConfirmOrderPayment = async (order) => {
+    if (!window.confirm(`Xác nhận đã nhận chuyển khoản cho đơn ${order.orderId}?`)) return;
+
+    setBusyOrderId(order.orderId);
+    setOrdersError('');
+    try {
+      const updatedOrder = await apiRequest(`/api/orders/admin/${order.orderId}/confirm-payment`, {
+        token,
+        method: 'POST',
+      });
+
+      setOrders((current) => current.map((item) => (item.orderId === updatedOrder.orderId ? updatedOrder : item)));
+      setSelectedOrder((current) => (current?.orderId === updatedOrder.orderId ? updatedOrder : current));
+    } catch (error) {
+      setOrdersError(formatError(error));
+    } finally {
+      setBusyOrderId('');
+    }
+  };
+
   if (authStatus === 'loading') {
     return <AuthGate status="loading" authError="Đang xác thực tài khoản quản trị..." onGoLogin={() => { window.location.href = USER_APP_LOGIN_URL; }} />;
   }
@@ -776,6 +796,7 @@ function App() {
         onViewOrder={handleViewOrder}
         onCloseDetail={() => setSelectedOrder(null)}
         onUpdateStatus={handleUpdateOrderStatus}
+        onConfirmPayment={handleConfirmOrderPayment}
       />
     );
   } else if (page === 'reviews') {

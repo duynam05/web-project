@@ -57,10 +57,24 @@ public class OrdersController {
                 .build();
     }
 
+    @GetMapping("/{orderId}/payment-session")
+    public ApiResponse<OrderResponse> getPaymentSession(@PathVariable UUID orderId, Authentication authentication) {
+        return ApiResponse.<OrderResponse>builder()
+                .result(ordersService.getPaymentSession(authentication.getName(), orderId))
+                .build();
+    }
+
     @GetMapping("/admin/{orderId}")
     public ApiResponse<OrderResponse> getOrderForAdmin(@PathVariable UUID orderId) {
         return ApiResponse.<OrderResponse>builder()
                 .result(ordersService.getOrderByIdForAdmin(orderId))
+                .build();
+    }
+
+    @GetMapping("/admin/{orderId}/payment-session")
+    public ApiResponse<OrderResponse> getPaymentSessionForAdmin(@PathVariable UUID orderId) {
+        return ApiResponse.<OrderResponse>builder()
+                .result(ordersService.getPaymentSessionForAdmin(orderId))
                 .build();
     }
 
@@ -70,6 +84,13 @@ public class OrdersController {
             @RequestBody OrderStatusUpdateRequest request) {
         return ApiResponse.<OrderResponse>builder()
                 .result(ordersService.updateOrderStatus(orderId, request != null ? request.getStatus() : null))
+                .build();
+    }
+
+    @PostMapping("/admin/{orderId}/confirm-payment")
+    public ApiResponse<OrderResponse> confirmBankTransferPayment(@PathVariable UUID orderId) {
+        return ApiResponse.<OrderResponse>builder()
+                .result(ordersService.confirmBankTransferPayment(orderId))
                 .build();
     }
 

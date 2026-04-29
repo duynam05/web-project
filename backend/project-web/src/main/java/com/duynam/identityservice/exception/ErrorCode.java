@@ -25,7 +25,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(1015, "Order not found", HttpStatus.NOT_FOUND),
     INVALID_PAYMENT_METHOD(1016, "Invalid payment method", HttpStatus.BAD_REQUEST),
     PAYMENT_ALREADY_COMPLETED(1017, "Order payment has already been completed", HttpStatus.BAD_REQUEST),
-    PAYMENT_METHOD_NOT_SUPPORTED(1018, "Only ONLINE payment is supported for this endpoint", HttpStatus.BAD_REQUEST),
+    PAYMENT_METHOD_NOT_SUPPORTED(1018, "Payment method is not supported for this endpoint", HttpStatus.BAD_REQUEST),
     INVALID_QUANTITY(1019, "Quantity must be greater than 0", HttpStatus.BAD_REQUEST),
     BOOK_ID_REQUIRED(1020, "Book ID is required", HttpStatus.BAD_REQUEST),
     BOOTSTRAP_CONFIG_MISSING(1021, "Admin bootstrap configuration is missing", HttpStatus.INTERNAL_SERVER_ERROR),

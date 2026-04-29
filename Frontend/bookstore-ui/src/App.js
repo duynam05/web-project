@@ -23,6 +23,7 @@ import VNPayGateway from './pages/VNPayGateway';
 import PrivateRoute from './components/PrivateRoute';
 import OrderListPage from './pages/OrderListPage';
 import OrderDetailPage from './pages/OrderDetailPage';
+import PaymentResultPage from './pages/PaymentResultPage';
 
 const Navbar = () => {
   const { cartItemCount } = useCartState();
@@ -178,6 +179,15 @@ function App() {
                     element={
                       <PrivateRoute>
                         <OrderDetailPage />
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/payment-result"
+                    element={
+                      <PrivateRoute>
+                        <PaymentResultPage />
                       </PrivateRoute>
                     }
                   />

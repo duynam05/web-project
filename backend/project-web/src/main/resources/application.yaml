@@ -44,3 +44,23 @@ app:
       email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
       password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
       full-name: ${APP_BOOTSTRAP_ADMIN_FULL_NAME:Administrator}
+  payment:
+    bank-transfer:
+      bank-id: ${APP_PAYMENT_BANK_TRANSFER_BANK_ID:970418}
+      bank-name: ${APP_PAYMENT_BANK_TRANSFER_BANK_NAME:BIDV}
+      account-number: ${APP_PAYMENT_BANK_TRANSFER_ACCOUNT_NUMBER:8860383073}
+      account-holder: ${APP_PAYMENT_BANK_TRANSFER_ACCOUNT_HOLDER:TRINH DUY NAM}
+      session-expiry-minutes: ${APP_PAYMENT_BANK_TRANSFER_SESSION_EXPIRY_MINUTES:15}
+    payos:
+      enabled: ${APP_PAYMENT_PAYOS_ENABLED:true}
+      use-for-bank-transfer: ${APP_PAYMENT_PAYOS_USE_FOR_BANK_TRANSFER:true}
+      environment: ${APP_PAYMENT_PAYOS_ENVIRONMENT:production}
+      base-url: ${APP_PAYMENT_PAYOS_BASE_URL:https://api-merchant.payos.vn}
+      client-id: ${PAYOS_CLIENT_ID:}
+      api-key: ${PAYOS_API_KEY:}
+      checksum-key: ${PAYOS_CHECKSUM_KEY:}
+      partner-code: ${PAYOS_PARTNER_CODE:}
+      webhook-url: ${APP_PAYMENT_PAYOS_WEBHOOK_URL:https://web-project-2-viwf.onrender.com/api/payments/payos/webhook}
+      return-url-base: ${APP_PAYMENT_PAYOS_RETURN_URL_BASE:https://duynam05.github.io/web-project/#/payment-result}
+      cancel-url-base: ${APP_PAYMENT_PAYOS_CANCEL_URL_BASE:https://duynam05.github.io/web-project/#/checkout}
+      expiry-minutes: ${APP_PAYMENT_PAYOS_EXPIRY_MINUTES:15}
