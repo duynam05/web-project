@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 import com.duynam.identityservice.entity.PaymentSession;
 
@@ -49,4 +51,7 @@ public interface PaymentSessionRepository extends JpaRepository<PaymentSession, 
               )
             """)
     Optional<PaymentSession> findLatestByProviderOrderCode(Long providerOrderCode);
+
+    @EntityGraph(attributePaths = {"order"})
+    List<PaymentSession> findByProviderAndStatusIn(String provider, Collection<String> statuses, Pageable pageable);
 }

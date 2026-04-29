@@ -64,3 +64,7 @@ app:
       return-url-base: ${APP_PAYMENT_PAYOS_RETURN_URL_BASE:https://duynam05.github.io/web-project/#/payment-result}
       cancel-url-base: ${APP_PAYMENT_PAYOS_CANCEL_URL_BASE:https://duynam05.github.io/web-project/#/checkout}
       expiry-minutes: ${APP_PAYMENT_PAYOS_EXPIRY_MINUTES:15}
+      sync-enabled: ${APP_PAYMENT_PAYOS_SYNC_ENABLED:true}
+      sync-fixed-delay-ms: ${APP_PAYMENT_PAYOS_SYNC_FIXED_DELAY_MS:30000}
+      sync-batch-size: ${APP_PAYMENT_PAYOS_SYNC_BATCH_SIZE:25}
+      cancel-on-order-cancel: ${APP_PAYMENT_PAYOS_CANCEL_ON_ORDER_CANCEL:true}

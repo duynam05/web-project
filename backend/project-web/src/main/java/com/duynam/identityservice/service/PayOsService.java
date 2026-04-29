@@ -1,7 +1,6 @@
 package com.duynam.identityservice.service;
 
 import java.math.BigDecimal;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -12,9 +11,12 @@ import java.util.StringJoiner;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 import com.duynam.identityservice.configuration.PayOsProperties;
@@ -30,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PayOsService {
 
+    private static final Logger log = LoggerFactory.getLogger(PayOsService.class);
+
     private final PayOsProperties payOsProperties;
 
     public boolean isEnabledForBankTransfer() {
@@ -37,12 +41,7 @@ public class PayOsService {
     }
 
     public PayOsCreatePaymentResponse createPaymentLink(Orders order, long providerOrderCode) {
-        RestClient client = RestClient.builder()
-                .baseUrl(payOsProperties.getBaseUrl())
-                .defaultHeader("x-client-id", payOsProperties.getClientId())
-                .defaultHeader("x-api-key", payOsProperties.getApiKey())
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+        RestClient client = buildClient();
 
         String description = buildDescription(order);
         String returnUrl = buildReturnUrl(order);
@@ -75,6 +74,21 @@ public class PayOsService {
                 .body(PayOsCreatePaymentResponse.class);
     }
 
+    public PayOsPaymentInfoResponse getPaymentLinkInformation(String idOrOrderCode) {
+        return buildClient().get()
+                .uri("/v2/payment-requests/{id}", idOrOrderCode)
+                .retrieve()
+                .body(PayOsPaymentInfoResponse.class);
+    }
+
+    public PayOsPaymentInfoResponse cancelPaymentLink(String idOrOrderCode, String cancellationReason) {
+        return buildClient().post()
+                .uri("/v2/payment-requests/{id}/cancel", idOrOrderCode)
+                .body(Map.of("cancellationReason", defaultString(cancellationReason)))
+                .retrieve()
+                .body(PayOsPaymentInfoResponse.class);
+    }
+
     public boolean verifyWebhookSignature(PayOsWebhookRequest request) {
         if (request == null || request.getData() == null || request.getSignature() == null) {
             return false;
@@ -98,7 +112,7 @@ public class PayOsService {
         data.put("virtualAccountName", defaultString(request.getData().getVirtualAccountName()));
         data.put("virtualAccountNumber", defaultString(request.getData().getVirtualAccountNumber()));
 
-        return hmacSha256(toSortedQueryString(data, false), payOsProperties.getChecksumKey())
+        return hmacSha256(toSortedQueryString(data), payOsProperties.getChecksumKey())
                 .equalsIgnoreCase(request.getSignature());
     }
 
@@ -109,6 +123,27 @@ public class PayOsService {
 
         return "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data="
                 + URLEncoder.encode(session.getQrUrl(), StandardCharsets.UTF_8);
+    }
+
+    public String resolveNormalizedStatus(PayOsPaymentInfoResponse response) {
+        if (response == null || response.data == null || response.data.status == null) {
+            return "";
+        }
+        return response.data.status.trim().toUpperCase();
+    }
+
+    private RestClient buildClient() {
+        RestClient.Builder builder = RestClient.builder()
+                .baseUrl(payOsProperties.getBaseUrl())
+                .defaultHeader("x-client-id", payOsProperties.getClientId())
+                .defaultHeader("x-api-key", payOsProperties.getApiKey())
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+
+        if (StringUtils.hasText(payOsProperties.getPartnerCode())) {
+            builder.defaultHeader("x-partner-code", payOsProperties.getPartnerCode());
+        }
+
+        return builder.build();
     }
 
     private String buildDescription(Orders order) {
@@ -130,20 +165,24 @@ public class PayOsService {
         payload.put("description", description);
         payload.put("orderCode", String.valueOf(orderCode));
         payload.put("returnUrl", returnUrl);
-        return hmacSha256(toSortedQueryString(payload, false), payOsProperties.getChecksumKey());
+        return hmacSha256(toSortedQueryString(payload), payOsProperties.getChecksumKey());
     }
 
-    private String toSortedQueryString(Map<String, ?> data, boolean encodeValues) {
+    private String toSortedQueryString(Map<String, ?> data) {
         return data.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .map(entry -> entry.getKey() + "=" + normalizeValue(entry.getValue(), encodeValues))
+                .map(entry -> entry.getKey() + "=" + normalizeValue(entry.getValue()))
                 .reduce((left, right) -> left + "&" + right)
                 .orElse("");
     }
 
-    private String normalizeValue(Object value, boolean encodeValues) {
-        String normalized = value == null ? "" : String.valueOf(value);
-        return encodeValues ? URI.create("http://dummy?" + normalized).getQuery() : normalized;
+    private String normalizeValue(Object value) {
+        if (value == null) return "";
+        String normalized = String.valueOf(value);
+        if ("undefined".equalsIgnoreCase(normalized) || "null".equalsIgnoreCase(normalized)) {
+            return "";
+        }
+        return normalized;
     }
 
     private String defaultString(String value) {
@@ -190,5 +229,25 @@ public class PayOsService {
         public String checkoutUrl;
         @JsonProperty("qrCode")
         public String qrCode;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PayOsPaymentInfoResponse {
+        public String code;
+        public String desc;
+        public PayOsPaymentInfoData data;
+        public String signature;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PayOsPaymentInfoData {
+        public String id;
+        public Long orderCode;
+        public Integer amount;
+        public Integer amountPaid;
+        public Integer amountRemaining;
+        public String status;
+        public String createdAt;
+        public String canceledAt;
     }
 }

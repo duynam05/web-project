@@ -149,27 +149,29 @@ public class OrdersService {
         return toOrderResponse(findOrderForAdmin(orderId));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OrderResponse getPaymentSession(String email, UUID orderId) {
         Orders order = findOrderForUser(email, orderId);
         if (!PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
             return toOrderResponse(order);
         }
 
-        paymentSessionService.getOrCreateBankTransferSession(order);
-        return toOrderResponse(order);
+        PaymentSession session = paymentSessionService.getOrCreateBankTransferSession(order);
+        session = paymentSessionService.syncPaymentSession(order);
+        return toOrderResponse(order, session);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @Transactional(readOnly = true)
+    @Transactional
     public OrderResponse getPaymentSessionForAdmin(UUID orderId) {
         Orders order = findOrderForAdmin(orderId);
         if (!PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
             return toOrderResponse(order);
         }
 
-        paymentSessionService.getOrCreateBankTransferSession(order);
-        return toOrderResponse(order);
+        PaymentSession session = paymentSessionService.getOrCreateBankTransferSession(order);
+        session = paymentSessionService.syncPaymentSession(order);
+        return toOrderResponse(order, session);
     }
 
     @Transactional
@@ -201,6 +203,7 @@ public class OrdersService {
     @Transactional
     public OrderResponse cancelOrder(String email, UUID orderId) {
         Orders order = findOrderForUser(email, orderId);
+        syncBankTransferPaymentIfNeeded(order);
 
         if (!canCancelOrder(order.getStatus())) {
             throw new AppException(ErrorCode.ORDER_CANNOT_BE_CANCELLED);
@@ -214,8 +217,10 @@ public class OrdersService {
 
         order.setStatus(OrderStatus.CANCELLED);
         order.setPaymentStatus(resolveCancelledPaymentStatus(order.getPaymentStatus(), order.getPaymentMethod()));
+        Orders savedOrder = ordersRepository.save(order);
+        cancelPaymentSessionIfNeeded(savedOrder, "User cancelled order " + savedOrder.getId());
 
-        return toOrderResponse(ordersRepository.save(order));
+        return toOrderResponse(savedOrder);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -314,6 +319,7 @@ public class OrdersService {
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, String rawStatus) {
         Orders order = findOrderForAdmin(orderId);
+        syncBankTransferPaymentIfNeeded(order);
         String nextStatus = parseOrderStatus(rawStatus);
 
         if (nextStatus.equals(order.getStatus())) {
@@ -343,7 +349,11 @@ public class OrdersService {
         }
 
         order.setStatus(nextStatus);
-        return toOrderResponse(ordersRepository.save(order));
+        Orders savedOrder = ordersRepository.save(order);
+        if (OrderStatus.CANCELLED.equals(nextStatus)) {
+            cancelPaymentSessionIfNeeded(savedOrder, "Admin cancelled order " + savedOrder.getId());
+        }
+        return toOrderResponse(savedOrder);
     }
 
     private Orders findOrderForUser(String email, UUID orderId) {
@@ -442,6 +452,22 @@ public class OrdersService {
     private String buildBankTransferReference(UUID orderId) {
         String normalized = orderId.toString().replace("-", "").toUpperCase(Locale.ROOT);
         return "DH-" + normalized.substring(0, 8);
+    }
+
+    private void syncBankTransferPaymentIfNeeded(Orders order) {
+        if (order != null && PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())) {
+            paymentSessionService.syncPaymentSession(order);
+        }
+    }
+
+    private void cancelPaymentSessionIfNeeded(Orders order, String reason) {
+        if (order == null
+                || !PaymentMethod.BANK_TRANSFER.equals(order.getPaymentMethod())
+                || PaymentStatus.PAID.equals(order.getPaymentStatus())
+                || PaymentStatus.REFUNDED.equals(order.getPaymentStatus())) {
+            return;
+        }
+        paymentSessionService.cancelSession(order, reason);
     }
 
     private OrderResponse toOrderResponse(Orders order) {

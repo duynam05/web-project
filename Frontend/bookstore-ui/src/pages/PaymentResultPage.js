@@ -39,7 +39,7 @@ export default function PaymentResultPage() {
 
     const fetchOrder = async () => {
       try {
-        const res = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+        const res = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

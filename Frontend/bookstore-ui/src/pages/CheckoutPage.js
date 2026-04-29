@@ -73,7 +73,7 @@ function getTransferInfo(order) {
 }
 
 async function fetchOrderById(orderId, token) {
-  const response = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+  const response = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },

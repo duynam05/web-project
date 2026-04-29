@@ -23,4 +23,8 @@ public class PayOsProperties {
     private String returnUrlBase = "https://duynam05.github.io/web-project/#/payment-result";
     private String cancelUrlBase = "https://duynam05.github.io/web-project/#/checkout";
     private Integer expiryMinutes = 15;
+    private boolean syncEnabled = true;
+    private Long syncFixedDelayMs = 30000L;
+    private Integer syncBatchSize = 25;
+    private boolean cancelOnOrderCancel = true;
 }

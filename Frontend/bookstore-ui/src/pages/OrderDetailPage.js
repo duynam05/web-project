@@ -45,19 +45,21 @@ function getTransferInfo(order) {
     accountNumber: session?.accountNumber || '8860383073',
     accountHolder: session?.accountHolder || 'TRINH DUY NAM',
     qrUrl: session?.qrUrl || '',
-    paymentUrl: session?.paymentUrl || '',
     expiresAt: session?.expiresAt || '',
+    sessionStatus: session?.status || '',
   };
 }
 
-const OrderDetailPage = () => {
+export default function OrderDetailPage() {
   const { orderId } = useParams();
   const token = localStorage.getItem('token');
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
+    if (!token) return;
+
     const fetchOrder = async () => {
-      const res = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+      const res = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -67,12 +69,11 @@ const OrderDetailPage = () => {
       if (res.ok) setOrder(data.result);
     };
 
-    if (token) fetchOrder();
+    fetchOrder();
   }, [orderId, token]);
 
   useEffect(() => {
-    if (!orderId || !token) return undefined;
-    if (!order) return undefined;
+    if (!token || !orderId || !order) return undefined;
     if (order.paymentMethod !== 'BANK_TRANSFER' || order.paymentStatus === 'PAID' || order.status === 'CANCELLED') {
       return undefined;
     }
@@ -81,7 +82,7 @@ const OrderDetailPage = () => {
 
     const pollOrder = async () => {
       try {
-        const res = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+        const res = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -91,7 +92,7 @@ const OrderDetailPage = () => {
         if (!active || !res.ok || !data?.result) return;
         setOrder(data.result);
       } catch {
-        // Ignore temporary polling failures while waiting for webhook confirmation.
+        // Ignore transient polling failures while waiting for payOS sync.
       }
     };
 
@@ -129,7 +130,7 @@ const OrderDetailPage = () => {
           <h2 className="text-base font-semibold text-blue-900">Hướng dẫn chuyển khoản</h2>
           {transferInfo.qrUrl ? (
             <div className="mt-4 flex justify-center rounded-2xl border border-blue-100 bg-white p-4">
-              <img alt="QR chuyển khoản VietQR" className="h-auto w-full max-w-[280px]" src={transferInfo.qrUrl} />
+              <img alt="QR chuyển khoản" className="h-auto w-full max-w-[280px]" src={transferInfo.qrUrl} />
             </div>
           ) : null}
           <div className="mt-3 space-y-1">
@@ -138,6 +139,7 @@ const OrderDetailPage = () => {
             <p><b>Chủ tài khoản:</b> {transferInfo.accountHolder}</p>
             <p><b>Nội dung:</b> {transferReference}</p>
             {transferInfo.expiresAt ? <p><b>Hiệu lực:</b> {new Date(transferInfo.expiresAt).toLocaleString('vi-VN')}</p> : null}
+            {transferInfo.sessionStatus ? <p><b>Trạng thái phiên:</b> {transferInfo.sessionStatus}</p> : null}
           </div>
         </div>
       ) : null}
@@ -157,6 +159,4 @@ const OrderDetailPage = () => {
       </div>
     </div>
   );
-};
-
-export default OrderDetailPage;
+}
