@@ -38,4 +38,3 @@ class IdentityServiceApplicationTests {
         log.info("BCrypt round 2: {}", passwordEncoder.encode(password));
     }
 }
-

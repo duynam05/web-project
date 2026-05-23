@@ -34,6 +34,10 @@ const PAYMENT_OPTIONS = [
   },
 ];
 
+const baseFieldClassName = 'rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-slate-50 focus:ring-4 focus:ring-blue-100';
+const errorFieldClassName = 'border-red-300 bg-red-50/80 focus:border-red-400 focus:bg-red-50 focus:ring-4 focus:ring-red-100';
+const couponFieldClassName = 'flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-slate-50 focus:ring-4 focus:ring-blue-100';
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -391,9 +395,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2">
                 <label className="text-[0.75rem] font-semibold uppercase tracking-wider text-slate-500">Họ tên</label>
                 <input
-                  className={`rounded-xl border px-4 py-3 outline-none transition-all ${
-                    errors.name ? 'border-red-300 bg-red-50/50 focus:ring-2 focus:ring-red-200' : 'border-transparent bg-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20'
-                  }`}
+                  className={`${baseFieldClassName} ${errors.name ? errorFieldClassName : ''}`}
                   placeholder="Nguyễn Văn A"
                   type="text"
                   value={form.name}
@@ -410,9 +412,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2">
                 <label className="text-[0.75rem] font-semibold uppercase tracking-wider text-slate-500">Số điện thoại</label>
                 <input
-                  className={`rounded-xl border px-4 py-3 outline-none transition-all ${
-                    errors.phone ? 'border-red-300 bg-red-50/50 focus:ring-2 focus:ring-red-200' : 'border-transparent bg-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20'
-                  }`}
+                  className={`${baseFieldClassName} ${errors.phone ? errorFieldClassName : ''}`}
                   placeholder="090 123 4567"
                   type="tel"
                   value={form.phone}
@@ -429,9 +429,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-[0.75rem] font-semibold uppercase tracking-wider text-slate-500">Email</label>
                 <input
-                  className={`rounded-xl border px-4 py-3 outline-none transition-all ${
-                    errors.email ? 'border-red-300 bg-red-50/50 focus:ring-2 focus:ring-red-200' : 'border-transparent bg-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20'
-                  }`}
+                  className={`${baseFieldClassName} ${errors.email ? errorFieldClassName : ''}`}
                   placeholder="curator@example.com"
                   type="email"
                   value={form.email}
@@ -448,9 +446,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-[0.75rem] font-semibold uppercase tracking-wider text-slate-500">Địa chỉ chi tiết</label>
                 <textarea
-                  className={`resize-none rounded-xl border px-4 py-3 outline-none transition-all ${
-                    errors.address ? 'border-red-300 bg-red-50/50 focus:ring-2 focus:ring-red-200' : 'border-transparent bg-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20'
-                  }`}
+                  className={`${baseFieldClassName} resize-none ${errors.address ? errorFieldClassName : ''}`}
                   placeholder="Số nhà, tên đường, phường/xã, quận/huyện, thành phố..."
                   rows="3"
                   value={form.address}
@@ -521,7 +517,7 @@ const CheckoutPage = () => {
             </div>
 
             <div className="mb-8 flex gap-2">
-              <input className="flex-1 rounded-xl border-none bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20" placeholder="Mã giảm giá" type="text" value={form.couponCode} onChange={(event) => setForm((prev) => ({ ...prev, couponCode: event.target.value }))} />
+              <input className={couponFieldClassName} placeholder="Mã giảm giá" type="text" value={form.couponCode} onChange={(event) => setForm((prev) => ({ ...prev, couponCode: event.target.value }))} />
               <button className="rounded-xl bg-slate-300 px-6 text-sm font-semibold text-slate-700 transition-all hover:opacity-80" type="button" onClick={() => toast.info('Chức năng mã giảm giá chưa được triển khai.')}>
                 Áp dụng
               </button>

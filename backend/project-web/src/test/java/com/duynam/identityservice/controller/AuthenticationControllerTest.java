@@ -97,6 +97,38 @@ public class AuthenticationControllerTest {
     }
 
     @Test
+    void authenticate_userNotFound_notFound() throws Exception {
+        when(authenticationService.authenticate(any()))
+                .thenThrow(new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String content = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(post("/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("code").value(ErrorCode.USER_NOT_EXISTED.getCode()))
+                .andExpect(jsonPath("message").value(ErrorCode.USER_NOT_EXISTED.getMessage()));
+    }
+
+    @Test
+    void authenticate_disabledAccount_forbidden() throws Exception {
+        when(authenticationService.authenticate(any()))
+                .thenThrow(new AppException(ErrorCode.ACCOUNT_DISABLED));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String content = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(post("/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("code").value(ErrorCode.ACCOUNT_DISABLED.getCode()))
+                .andExpect(jsonPath("message").value(ErrorCode.ACCOUNT_DISABLED.getMessage()));
+    }
+
+    @Test
     void register_validRequest_success() throws Exception {
         var response = UserResponse.builder()
                 .id("new-user-id")
@@ -117,6 +149,55 @@ public class AuthenticationControllerTest {
                 .andExpect(jsonPath("code").value(1000))
                 .andExpect(jsonPath("result.id").value("new-user-id"))
                 .andExpect(jsonPath("result.email").value("new-user@example.com"));
+    }
+
+    @Test
+    void register_invalidEmail_badRequest() throws Exception {
+        registerRequest.setEmail("abc");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String content = objectMapper.writeValueAsString(registerRequest);
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(ErrorCode.EMAIL_INVALID.getCode()))
+                .andExpect(jsonPath("message").value("Email must be at least 4 characters"));
+    }
+
+    @Test
+    void register_invalidPassword_badRequest() throws Exception {
+        registerRequest.setPassword("12345");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String content = objectMapper.writeValueAsString(registerRequest);
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(ErrorCode.INVALID_PASSWORD.getCode()))
+                .andExpect(jsonPath("message").value("Password must be at least 6 characters"));
+    }
+
+    @Test
+    void register_duplicateEmail_badRequest() throws Exception {
+        when(userService.registerUser(any()))
+                .thenThrow(new AppException(ErrorCode.USER_EXISTED));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String content = objectMapper.writeValueAsString(registerRequest);
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(ErrorCode.USER_EXISTED.getCode()))
+                .andExpect(jsonPath("message").value(ErrorCode.USER_EXISTED.getMessage()));
     }
 }
 
