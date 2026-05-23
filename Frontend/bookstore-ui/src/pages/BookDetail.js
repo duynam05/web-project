@@ -7,6 +7,7 @@ import StarRating from '../components/StarRating';
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 import { buildApiUrl, resolveImageUrl } from '../config/api';
+import { splitBookCategories } from '../utils/bookCategories';
 
 function depthTone(depth) {
   if (depth <= 0) return 'border-blue-100 bg-blue-50/50';
@@ -218,6 +219,7 @@ const BookDetail = () => {
   const stock = book?.stock ?? 0;
   const isOutOfStock = stock === 0;
   const currentUserId = user?.id || '';
+  const categories = useMemo(() => splitBookCategories(book?.category), [book?.category]);
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -560,7 +562,13 @@ const BookDetail = () => {
             <span className="text-2xl font-bold text-red-600">
               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
             </span>
-            <span className="rounded bg-blue-100 px-2 py-1 text-sm text-blue-800">{book.category}</span>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <span key={`${book.id}-${category}`} className="rounded bg-blue-100 px-2 py-1 text-sm text-blue-800">
+                  {category}
+                </span>
+              ))}
+            </div>
           </div>
           <div className="mb-6 flex items-center gap-2">
             <StarRating rating={displayedAverageRating} />

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { splitBookCategories } from '../utils/bookCategories';
 
 const HistoryContext = createContext();
 
@@ -9,14 +10,20 @@ export const HistoryProvider = ({ children }) => {
   });
 
   const addToHistory = useCallback((category) => {
-    if (!category) return;
+    const nextCategories = splitBookCategories(category);
+    if (nextCategories.length === 0) return;
 
     setViewedCategories((current) => {
-      if (current.includes(category)) {
+      const normalizedCurrent = new Set(current.map((item) => item.toLowerCase()));
+      const uniqueNewCategories = nextCategories.filter(
+        (item) => !normalizedCurrent.has(item.toLowerCase()),
+      );
+
+      if (uniqueNewCategories.length === 0) {
         return current;
       }
 
-      const next = [category, ...current].slice(0, 5);
+      const next = [...uniqueNewCategories, ...current].slice(0, 5);
       localStorage.setItem('viewedCategories', JSON.stringify(next));
       return next;
     });

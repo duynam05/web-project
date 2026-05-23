@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import { Search } from 'lucide-react';
 import { buildApiUrl, extractResultList } from '../config/api';
+import { hasCategoryMatch, splitBookCategories } from '../utils/bookCategories';
 
 const PAGE_SIZE = 12;
 
@@ -23,7 +24,7 @@ const BookList = () => {
     let result = books;
   
     if (selectedCategory !== 'All') {
-      result = result.filter(b => b.category === selectedCategory);
+      result = result.filter((book) => hasCategoryMatch(book.category, selectedCategory));
     }
   
     if (debouncedSearchTerm) {
@@ -57,10 +58,20 @@ const BookList = () => {
 
         setBooks(bookList);
 
-        const categoryOptions = [
-          'All',
-          ...new Set(bookList.map(b => b.category).filter(Boolean))
-        ];
+        const categoryOptions = ['All'];
+        const seenCategories = new Set();
+
+        bookList
+          .flatMap((book) => splitBookCategories(book.category))
+          .forEach((category) => {
+            const normalizedCategory = category.toLowerCase();
+            if (seenCategories.has(normalizedCategory)) {
+              return;
+            }
+            seenCategories.add(normalizedCategory);
+            categoryOptions.push(category);
+          });
+
         setCategories(categoryOptions);
       })
       .catch(err => console.error(err))

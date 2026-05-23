@@ -12,6 +12,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import ReviewsPage from './pages/ReviewsPage';
 import SettingsPage from './pages/SettingsPage';
 import { UsersPhase1, UserFormPhase1 } from './pages/UsersPhase1';
+import { hasCategoryMatch, splitBookCategories } from './utils/bookCategories';
 
 const TOKEN_STORAGE_KEY = 'admin_token';
 
@@ -605,16 +606,30 @@ function App() {
   }
 
   const normalizedBookSearch = normalizeText(bookSearch);
-  const bookCategories = Array.from(new Set(
-    books.map((book) => (book.category || '').trim()).filter(Boolean),
-  )).sort((left, right) => left.localeCompare(right, 'vi'));
+  const bookCategories = (() => {
+    const seenCategories = new Set();
+    const result = [];
+
+    books
+      .flatMap((book) => splitBookCategories(book.category))
+      .forEach((category) => {
+        const normalizedCategory = category.toLowerCase();
+        if (seenCategories.has(normalizedCategory)) {
+          return;
+        }
+        seenCategories.add(normalizedCategory);
+        result.push(category);
+      });
+
+    return result.sort((left, right) => left.localeCompare(right, 'vi'));
+  })();
 
   const visibleBooks = books.filter((book) => {
     const matchesSearch =
       !normalizedBookSearch ||
       [book.title, book.author, book.category, book.id].some((value) => normalizeText(value).includes(normalizedBookSearch));
 
-    const matchesCategory = bookCategoryFilter === 'all' || (book.category || '').trim() === bookCategoryFilter;
+    const matchesCategory = hasCategoryMatch(book.category, bookCategoryFilter);
 
     const stock = Number(book.stock || 0);
     const matchesStock =

@@ -6,6 +6,7 @@ import { ShoppingCart } from 'lucide-react';
 import { buildApiUrl, resolveImageUrl } from '../config/api';
 import { useCartActions } from '../contexts/CartContext';
 import { toast } from 'react-toastify';
+import { splitBookCategories } from '../utils/bookCategories';
 
 const BookCard = ({ book }) => {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ const BookCard = ({ book }) => {
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const stock = book.stock ?? 0;
+  const categories = splitBookCategories(book.category);
 
   const isOutOfStock = stock === 0;
 
@@ -115,11 +117,11 @@ const BookCard = ({ book }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col h-full">
-      <Link to={`/book/${book.id}`} className="relative h-64 overflow-hidden group">
+      <Link to={`/book/${book.id}`} className="group flex h-64 items-center justify-center overflow-hidden bg-slate-100 p-4">
         <img
           src={resolveImageUrl(book.image)}
           alt={book.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
             e.currentTarget.src = '/placeholder-book.svg';
           }}
@@ -127,7 +129,13 @@ const BookCard = ({ book }) => {
       </Link>
 
       <div className="p-4 flex flex-col flex-grow">
-        <span className="text-xs text-blue-600 font-semibold uppercase">{book.category}</span>
+        <div className="mb-1 flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <span key={`${book.id}-${category}`} className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+              {category}
+            </span>
+          ))}
+        </div>
         <Link to={`/book/${book.id}`} className="text-lg font-bold text-gray-800 hover:text-blue-600 mt-1 line-clamp-1">
           {book.title}
         </Link>

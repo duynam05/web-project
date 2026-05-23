@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import { useHistory } from '../contexts/HistoryContext';
 import { buildApiUrl, extractResultList } from '../config/api';
+import { splitBookCategories } from '../utils/bookCategories';
 
 const HOME_BOOK_LIMIT = 12;
 
@@ -37,12 +38,16 @@ const Home = () => {
   );
 
   const recommendedBooks = useMemo(
-    () => books
+    () => {
+      const viewedCategorySet = new Set(viewedCategories.map((category) => category.toLowerCase()));
+
+      return books
       .filter((book) =>
-        viewedCategories.includes(book.category) &&
+        splitBookCategories(book.category).some((category) => viewedCategorySet.has(category.toLowerCase())) &&
         !featuredBooks.some((featuredBook) => featuredBook.id === book.id)
       )
-      .slice(0, 4),
+      .slice(0, 4);
+    },
     [books, featuredBooks, viewedCategories]
   );
 

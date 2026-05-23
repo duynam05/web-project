@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
+import { splitBookCategories } from '../utils/bookCategories';
 
 const DAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const MONTH_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
@@ -191,9 +192,19 @@ function DashboardPhase1({ books, users, orders, loading, searchValue, onRefresh
     const categoryMap = new Map();
 
     books.forEach((book) => {
-      const key = (book.category || 'Chưa phân loại').trim() || 'Chưa phân loại';
-      const current = categoryMap.get(key) || 0;
-      categoryMap.set(key, current + 1);
+      const categories = splitBookCategories(book.category);
+
+      if (!categories.length) {
+        const fallbackKey = 'Chưa phân loại';
+        const current = categoryMap.get(fallbackKey) || 0;
+        categoryMap.set(fallbackKey, current + 1);
+        return;
+      }
+
+      categories.forEach((category) => {
+        const current = categoryMap.get(category) || 0;
+        categoryMap.set(category, current + 1);
+      });
     });
 
     const wraps = [
