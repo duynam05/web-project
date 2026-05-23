@@ -6,6 +6,41 @@ import { buildApiUrl, extractResultList } from '../config/api';
 import { hasCategoryMatch, splitBookCategories } from '../utils/bookCategories';
 
 const PAGE_SIZE = 12;
+const BACKEND_PAGE_SIZE = 100;
+
+async function fetchBooksPage(pageIndex) {
+  const response = await fetch(buildApiUrl(`/books?page=${pageIndex}&size=${BACKEND_PAGE_SIZE}`));
+
+  if (!response.ok) {
+    throw new Error('Không thể tải danh sách sách');
+  }
+
+  return response.json();
+}
+
+async function fetchAllBooks() {
+  const firstPageData = await fetchBooksPage(0);
+  const firstPageResult = firstPageData?.result || {};
+  const firstPageBooks = Array.isArray(firstPageResult.content)
+    ? firstPageResult.content
+    : extractResultList(firstPageData);
+  const totalBackendPages = Math.max(Number(firstPageResult.totalPages || 1), 1);
+
+  if (totalBackendPages === 1) {
+    return firstPageBooks;
+  }
+
+  const remainingPageData = await Promise.all(
+    Array.from({ length: totalBackendPages - 1 }, (_, index) => fetchBooksPage(index + 1)),
+  );
+
+  const remainingBooks = remainingPageData.flatMap((pageData) => {
+    const pageResult = pageData?.result || {};
+    return Array.isArray(pageResult.content) ? pageResult.content : extractResultList(pageData);
+  });
+
+  return [...firstPageBooks, ...remainingBooks];
+}
 
 const BookList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -50,11 +85,9 @@ const BookList = () => {
 
   useEffect(() => {
     setLoading(true);
-  
-    fetch(buildApiUrl('/books'))
-      .then(res => res.json())
-      .then(data => {
-        const bookList = extractResultList(data);
+
+    fetchAllBooks()
+      .then((bookList) => {
 
         setBooks(bookList);
 
