@@ -326,7 +326,7 @@ Ghi chú: với môi trường local, tài khoản admin demo được tạo khi
 
 ## Link video demo
 
-- Chưa cập nhật.
+- video: https://drive.google.com/drive/folders/1lmiiJPuKq57hIkmnUf68lKYXfW98iR51
 
 ## Link online đã deploy
 
